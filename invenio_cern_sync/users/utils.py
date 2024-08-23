@@ -7,15 +7,10 @@
 
 """Invenio-CERN-sync users serializer API."""
 
-from .errors import InvalidLdapUser
 
-
-def first_or_raise(d, key, employee_id):
+def first_or_raise(d, key):
     """Return the decoded first value of the given key or raise."""
-    try:
-        return d[key][0].decode("utf8")
-    except (KeyError, IndexError, AttributeError):
-        raise InvalidLdapUser(key, employee_id)
+    return d[key][0].decode("utf8")
 
 
 def first_or_default(d, key, default=""):

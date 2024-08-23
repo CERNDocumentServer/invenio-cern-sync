@@ -13,33 +13,40 @@ from .errors import InvalidLdapUser
 from .utils import first_or_default, first_or_raise
 
 
-def _serialize_ldap_user(ldap_user, userprofile_mapper, extra_data_mapper):
-    """Serialize ldap user to Invenio user."""
-    employee_id = first_or_raise(
-        ldap_user, "employeeID", "unknown"
-    )  # this should always exist
-    return dict(
-        email=first_or_raise(ldap_user, "mail").lower(),
-        username=first_or_raise(ldap_user, "cn").lower(),
-        active=first_or_default(ldap_user, "cernActiveStatus", "Active").lower()
-        == "active",
-        user_profile=userprofile_mapper(ldap_user),
-        preferences=dict(
-            locale=first_or_default(ldap_user, "preferredLanguage", "en").lower()
-        ),
-        user_identity_id=employee_id,
-        remote_account_extra_data=extra_data_mapper(ldap_user),
+def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=None):
+    """Serialize LDAP user to Invenio user."""
+    userprofile_mapper = (
+        userprofile_mapper or current_app.config["CERN_SYNC_USERPROFILE_MAPPER"]
     )
+    extra_data_mapper = (
+        extra_data_mapper or current_app.config["CERN_SYNC_USER_EXTRADATA_MAPPER"]
+    )
+    try:
+        # this should always exist
+        employee_id = first_or_raise(ldap_user, "employeeID")
+    except:
+        raise InvalidLdapUser("employeeID", "unknown")
+
+    try:
+        serialized = dict(
+            email=first_or_raise(ldap_user, "mail").lower(),
+            username=first_or_raise(ldap_user, "cn").lower(),
+            active=first_or_default(ldap_user, "cernActiveStatus", "Active").lower()
+            == "active",
+            user_profile=userprofile_mapper(ldap_user),
+            preferences=dict(
+                locale=first_or_default(ldap_user, "preferredLanguage", "en").lower()
+            ),
+            user_identity_id=employee_id,
+            remote_account_extra_data=extra_data_mapper(ldap_user),
+        )
+    except (KeyError, IndexError, AttributeError) as e:
+        raise InvalidLdapUser(e.args[0], employee_id)
+
+    return serialized
 
 
 def serialize_ldap_users(ldap_users):
-    """Serialize ldap users to Invenio users."""
-    userprofile_mapper = current_app.config["CERN_SYNC_USERPROFILE_MAPPER"]
-    extra_data_mapper = current_app.config["CERN_SYNC_USER_EXTRADATA_MAPPER"]
-
+    """Serialize LDAP users to Invenio users."""
     for ldap_user in ldap_users:
-        try:
-            yield _serialize_ldap_user(ldap_user, userprofile_mapper, extra_data_mapper)
-        except InvalidLdapUser as ex:
-            # LOG-ME!
-            continue
+        yield serialize_ldap_user(ldap_user)

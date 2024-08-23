@@ -12,6 +12,18 @@ from .users.profile import remoteaccount_extradata_mapper, userprofile_mapper
 CERN_SYNC_LDAP_URL = None
 """Set the CERN LDAP URL."""
 
+CERN_SYNC_CLIENT_ID = None
+"""Set the unique id/name of the CERN SSO app, also called `consumer_key`.
+
+This corresponds to the RemoteAccount `client_id` column.
+"""
+
+CERN_SYNC_REMOTE_APP_NAME = None
+"""Set the configured remote (oauth) app name for the CERN login.
+
+This corresponds to the UserIdentity `method` column.
+"""
+
 CERN_SYNC_USERPROFILE_MAPPER = userprofile_mapper
 """Map the ldap response to Invenio user profile schema.
 

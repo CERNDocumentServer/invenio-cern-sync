@@ -20,3 +20,7 @@ class InvalidLdapUser(Exception):
     def description(self):
         """Exception description."""
         return f"Missing {self._key} field or invalid value for employeeID {self._employee_id}."
+
+    def __str__(self):
+        """String representation."""
+        return self.description

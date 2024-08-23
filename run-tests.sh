@@ -8,7 +8,7 @@
 
 
 # Usage:
-#   env DB=postgresql12 SEARCH=elasticsearch7 CACHE=redis MQ=rabbitmq ./run-tests.sh
+#   env DB=postgresql12 SEARCH=opensearch2 CACHE=redis MQ=rabbitmq ./run-tests.sh
 
 # Quit on errors
 set -o errexit
@@ -23,7 +23,7 @@ function cleanup() {
 trap cleanup EXIT
 
 python -m check_manifest
-eval "$(docker-services-cli up --db ${DB:-postgresql} --search ${SEARCH:-elasticsearch} --cache ${CACHE:-redis} --mq ${MQ:-rabbitmq} --env)"
+eval "$(docker-services-cli up --db ${DB:-postgresql} --search ${SEARCH:-opensearch2} --cache ${CACHE:-redis} --mq ${MQ:-rabbitmq} --env)"
 python -m pytest
 tests_exit_code=$?
 exit "$tests_exit_code"

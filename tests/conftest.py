@@ -35,7 +35,7 @@ def ldap_users():
             "cernInstituteAbbreviation": [b"CERN"],
             "cernInstituteName": [b"CERN"],
             "cernSection": [b"DEF"],
-            "cn": [b"newuser1"],
+            "cn": [b"NewUser1"],
             "department": [b"IT/ABC"],
             "displayName": [b"New User 1"],
             "division": [b"IT"],

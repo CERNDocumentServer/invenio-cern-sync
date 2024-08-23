@@ -86,45 +86,70 @@ class InvenioUserCreator:
         return user_id
 
 
-class InvenioUserUpdater:
-    """Create an Invenio user."""
+###################################################################################
+# User update
 
-    def _update_useridentity(self, user_identity, invenio_user):
-        """Update User profile col, when necessary."""
-        changed = user_identity.id != invenio_user["user_identity_id"]
-        if changed:
-            user_identity.id = invenio_user["user_identity_id"]
 
-    def _update_user(self, user, invenio_user):
-        """Update User table, when necessary."""
-        changed = (
-            user.email != invenio_user["email"]
-            or user.username != invenio_user["username"].lower()
-            or user.displayname != invenio_user["username"]
-            or user.active != invenio_user["active"]
-        )  # or \
+def _update_user(user, invenio_ldap_user):
+    """Update User table, when necessary."""
+    user_changed = (
+        user.email != invenio_ldap_user["email"]
+        or user.username != invenio_ldap_user["username"].lower()
+        or user.active != invenio_ldap_user["active"]
+    )
+    if user_changed:
+        user.email = invenio_ldap_user["email"]
+        user.username = invenio_ldap_user["username"]
+        user.active = invenio_ldap_user["active"]
 
-        # changes = dictdiffer.diff(old_mapping, mapping)
+    # check if any key/value in LDAP is different from the local user.user_profile
+    local_up = user.user_profile
+    ldap_up = invenio_ldap_user["user_profile"]
+    up_changed = (
+        len([key for key in ldap_up.keys() if local_up.get(key, "") != ldap_up[key]])
+        > 0
+    )
+    if up_changed:
+        user.user_profile = {**dict(user.user_profile), **ldap_up}
 
-        # user.user_profile..... fix me or \
-        # user.preferences["locale"] != invenio_user["userpreferences"]["locale"]
+    # check if any key/value in LDAP is different from the local user.preferences
+    local_prefs = user.preferences
+    ldap_prefs = invenio_ldap_user["preferences"]
+    prefs_changed = (
+        len(
+            [
+                key
+                for key in ldap_prefs.keys()
+                if local_prefs.get(key, "") != ldap_prefs[key]
+            ]
+        )
+        > 0
+    )
+    if prefs_changed:
+        user.preferences = {**dict(user.preferences), **ldap_prefs}
 
-        if changed:
-            user.email = invenio_user["email"]
-            user.username = invenio_user["username"].lower()
-            user.displayname = invenio_user["displayname"]
-            user.active = invenio_user["active"]
-            # PROFILE FIX ME
-            # user.preferences["locale"] = invenio_user["userpreferences"]["locale"]
 
-    def update(self, user, user_identity, invenio_user):
-        """Update all user tables, when necessary, to avoid updating `updated` date."""
-        self._update_user(user, invenio_user)
-        self._update_useridentity(user_identity, invenio_user)
-        self._update
+def _update_useridentity(user_identity, invenio_ldap_user):
+    """Update User profile col, when necessary."""
+    changed = user_identity.id != invenio_ldap_user["user_identity_id"]
+    if changed:
+        user_identity.id = invenio_ldap_user["user_identity_id"]
 
-        ra = self.remote_account
-        ra.extra_data["keycloak_id"] = ldap_user["user_username"]
-        ra.extra_data["department"] = ldap_user["remote_account_department"]
 
-        self.user_profile.full_name = ldap_user["user_profile_full_name"]
+def _update_remote_account(user, invenio_ldap_user):
+    """Update RemoteAccount table."""
+    client_id = current_app.config["CERN_SYNC_CLIENT_ID"]
+    remote_account = RemoteAccount.get(user.id, client_id)
+
+    new_extra_data = invenio_ldap_user["remote_account_extra_data"]
+    if not remote_account:
+        RemoteAccount.create(user.id, client_id, new_extra_data)
+    else:
+        remote_account.extra_data.update(**new_extra_data)
+
+
+def update_existing_user(local_user, local_user_identity, invenio_ldap_user):
+    """Update all user tables, when necessary."""
+    _update_user(local_user, invenio_ldap_user)
+    _update_useridentity(local_user_identity, invenio_ldap_user)
+    _update_remote_account(local_user, invenio_ldap_user)
