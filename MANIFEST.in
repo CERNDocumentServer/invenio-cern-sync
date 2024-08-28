@@ -16,7 +16,7 @@
 include .dockerignore
 include .editorconfig
 recursive-include .github/workflows *.yml
-recursive-include invenio_cern_sync/translations *.po *.pot *.mo
+include *.md
 include *.sh
 recursive-include invenio_cern_sync *.py
 recursive-include tests *.py
