@@ -14,76 +14,71 @@ from invenio_db import db
 from invenio_oauthclient.models import RemoteAccount, UserIdentity
 
 
-class InvenioUserCreator:
-    """Create an Invenio user."""
+def _create_user(invenio_ldap_user, active=True):
+    """Create new user."""
+    user = User(
+        email=invenio_ldap_user["email"],
+        username=invenio_ldap_user["username"],
+        active=active,
+        user_profile=invenio_ldap_user["user_profile"],
+        preferences=invenio_ldap_user["preferences"],
+    )
+    db.session.add(user)
+    # necessary to get the auto-generated `id`
+    db.session.commit()
+    return user
 
-    def __init__(self, app_client_id, remote_app_name):
-        """Constructor."""
-        self._app_client_id = app_client_id
-        self._remote_app_name = (
-            remote_app_name or current_app.config["OAUTH_REMOTE_APP_NAME"]
-        )
 
-    def _create_user(self, user, active=True):
-        """Create new user."""
-        user = User(
-            email=user["email"],
-            username=user["username"],
-            active=active,
-            user_profile=user["user_profile"],
-        )
-        db.session.add(user)
-        # necessary to get the auto-generated `id`
-        db.session.commit()
-        return user
+def _create_user_identity(user, invenio_ldap_user):
+    """Create new user identity."""
+    remote_app_name = current_app.config["CERN_SYNC_REMOTE_APP_NAME"]
+    assert remote_app_name
+    return UserIdentity.create(
+        user,
+        remote_app_name,
+        invenio_ldap_user["user_identity_id"],
+    )
 
-    def _create_user_identity(self, user_id, user):
-        """Create new user identity."""
-        return UserIdentity(
-            id=user["user_identity_id"],
-            method=self._remote_app_name,
-            id_user=user_id,
-        )
 
-    def _create_remote_account(self, user_id, user):
-        """Return new user entry."""
-        return RemoteAccount.create(
-            client_id=self._app_client_id,
-            user_id=user_id,
-            extra_data=dict(
-                keycloak_id=user["username"],
-                **user.get("remote_account_extra_data", {})
-            ),
-        )
+def _create_remote_account(user, invenio_ldap_user):
+    """Return new user entry."""
+    client_id = current_app.config["CERN_SYNC_CLIENT_ID"]
+    assert client_id
+    return RemoteAccount.create(
+        client_id=client_id,
+        user_id=user.id,
+        extra_data=dict(
+            keycloak_id=invenio_ldap_user["username"],
+            **invenio_ldap_user.get("remote_account_extra_data", {})
+        ),
+    )
 
-    def create(self, user, active=True, auto_confirm=True):
-        """Create Invenio user.
 
-        :param user: dict. Expected format:
-            {
-                email: <string>,
-                username: <string>,
-                user_profile: CERNUserProfileSchema or configured schema,
-                user_identity_id: <string>,
-                remote_account_extra_data: <dict> (optional)
-            }
-        :param active: set the user `active`
-        :param auto_confirm: set the user `confirmed`
-        :return: the newly created Invenio user id.
-        """
-        user = self._create_user(user, active=active)
-        user_id = user.id
+def create_user(invenio_ldap_user, active=True, auto_confirm=True):
+    """Create Invenio user.
 
-        identity = self._create_user_identity(user_id, user)
-        db.session.add(identity)
+    :param user: dict. Expected format:
+        {
+            email: <string>,
+            username: <string>,
+            user_profile: CERNUserProfileSchema or configured schema,
+            user_identity_id: <string>,
+            remote_account_extra_data: <dict> (optional)
+        }
+    :param active: set the user `active`
+    :param auto_confirm: set the user `confirmed`
+    :return: the newly created Invenio user id.
+    """
+    user = _create_user(invenio_ldap_user, active=active)
+    user_id = user.id
 
-        remote_account = self._create_remote_account(user_id, user)
-        db.session.add(remote_account)
+    _create_user_identity(user, invenio_ldap_user)
+    _create_remote_account(user, invenio_ldap_user)
 
-        if auto_confirm:
-            # Automatically confirm the user
-            confirm_user(user)
-        return user_id
+    if auto_confirm:
+        # Automatically confirm the user
+        confirm_user(user)
+    return user_id
 
 
 ###################################################################################
@@ -139,6 +134,7 @@ def _update_useridentity(user_identity, invenio_ldap_user):
 def _update_remote_account(user, invenio_ldap_user):
     """Update RemoteAccount table."""
     client_id = current_app.config["CERN_SYNC_CLIENT_ID"]
+    assert client_id
     remote_account = RemoteAccount.get(user.id, client_id)
 
     new_extra_data = invenio_ldap_user["remote_account_extra_data"]

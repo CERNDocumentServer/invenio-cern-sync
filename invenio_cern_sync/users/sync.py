@@ -7,21 +7,26 @@
 
 """Invenio-CERN-sync users sync API."""
 
-import logging
+import uuid
+import time
 
 from invenio_accounts.models import User, UserIdentity
 from invenio_db import db
+from invenio_users_resources.services.users.tasks import reindex_users
 
+from ..logging import log_info, log_error, log_warning
 from ..ldap.client import LdapClient
-from .api import update_existing_user
+from .api import create_user, update_existing_user
 from .serializer import serialize_ldap_users
 
-logger = logging.getLogger("sync")
 
-
-def _update_existing(ldap_users):
-    """."""
+def _update_existing(ldap_users, log_uuid):
+    """Update existing users and return a list of missing users to insert."""
     missing = []
+    updated = set()
+    log_action = "updating_existing_users"
+    log_info(log_uuid, log_action, dict(status="started"))
+
     for invenio_ldap_user in serialize_ldap_users(ldap_users):
         user = user_identity = None
 
@@ -42,18 +47,18 @@ def _update_existing(ldap_users):
             if user:
                 # user found, looks like that the `person_id` was updated!
                 user_identity = UserIdentity.query.filter_by(id_user=user.id).first()
-                logger.warning(
-                    f"User `{invenio_ldap_user["email"]}` (username `{invenio_ldap_user["username"]}`) has different profile id. Local db: `{user_identity.id}` - LDAP: `{invenio_ldap_user["person_id"]}`"
-                )
+
+                log_msg = f"User `{invenio_ldap_user["email"]}` (username `{invenio_ldap_user["username"]}`) has different profile id. Local db: `{user_identity.id}` - LDAP: `{invenio_ldap_user["person_id"]}`"
+                log_warning(log_uuid, log_action, dict(msg=log_msg))
 
         if (user and not user_identity) or (user_identity and not user):
             # Something very wrong here, should never happen
-            logger.error(
-                f"User and user_identity are not correctly linked for user f{user} and user_identity f{user_identity}"
-            )
+            log_msg = f"User and user_identity are not correctly linked for user f{user} and user_identity f{user_identity}"
+            log_error(log_uuid, log_action, dict(msg=log_msg))
         elif user and user_identity:
             # User found, update info
             update_existing_user(user, user_identity, invenio_ldap_user)
+            updated.add(user.id)
         else:
             # The user does not exist in the DB.
             # The creation of new users is done after all updates completed,
@@ -62,13 +67,49 @@ def _update_existing(ldap_users):
 
     # persist changes before inserting
     db.session.commit()
-    return missing
+    log_info(log_uuid, log_action, dict(status="completed", updated_count=len(updated)))
+    return missing, updated
+
+
+def _insert_missing(invenio_ldap_users, log_uuid):
+    """Insert users."""
+    log_info(
+        log_uuid,
+        "inserting_missing_users",
+        dict(status="started", count=len(invenio_ldap_users)),
+    )
+
+    inserted = set()
+    for invenio_ldap_user in invenio_ldap_users:
+        _id = create_user(invenio_ldap_user)
+        inserted.add(_id)
+
+    db.session.commit()
+    log_info(
+        log_uuid,
+        "inserting_missing_users",
+        dict(status="completed", inserted_count=len(inserted)),
+    )
+    return inserted
 
 
 def sync():
-    """."""
+    """Sync CERN LDAP db with local db."""
+    log_uuid = str(uuid.uuid4())
+    log_info(log_uuid, "ldap_users_fetch", dict(status="started"))
+    start_time = time.time()
+
     ldap_client = LdapClient()
     ldap_users = ldap_client.get_primary_accounts()
 
-    missing_invenio_users = _update_existing(ldap_users)
-    # _insert_missing(missing_invenio_users)
+    log_info(
+        log_uuid, "ldap_users_fetch", dict(status="completed", count=len(ldap_users))
+    )
+
+    missing_invenio_users, updated_ids = _update_existing(ldap_users, log_uuid)
+    inserted_ids = _insert_missing(missing_invenio_users, log_uuid)
+
+    reindex_users.delay(updated_ids + inserted_ids)
+
+    total_time = time.time() - start_time
+    log_info(log_uuid, "sync_done", dict(time=total_time))

@@ -12,9 +12,22 @@ from invenio_app.factory import create_app as _create_app
 
 
 @pytest.fixture(scope="module")
-def app_config(app_config):
+def client_id(app_config):
+    """Return a test client id."""
+    return "rdm_prod"
+
+
+@pytest.fixture(scope="module")
+def remote_app_name(app_config):
+    """Return a test remote app name."""
+    return "cern"
+
+
+@pytest.fixture(scope="module")
+def app_config(app_config, client_id, remote_app_name):
     """Application config override."""
-    # app_config["CERN_DEFAULT_VALUE"] = "test-foobar"
+    app_config["CERN_SYNC_REMOTE_APP_NAME"] = remote_app_name
+    app_config["CERN_SYNC_CLIENT_ID"] = client_id
     return app_config
 
 

@@ -23,7 +23,7 @@ def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=No
     )
     try:
         # this should always exist
-        employee_id = first_or_raise(ldap_user, "employeeID")
+        person_id = first_or_raise(ldap_user, "employeeID")
     except:
         raise InvalidLdapUser("employeeID", "unknown")
 
@@ -37,11 +37,11 @@ def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=No
             preferences=dict(
                 locale=first_or_default(ldap_user, "preferredLanguage", "en").lower()
             ),
-            user_identity_id=employee_id,
+            user_identity_id=person_id,
             remote_account_extra_data=extra_data_mapper(ldap_user),
         )
     except (KeyError, IndexError, AttributeError) as e:
-        raise InvalidLdapUser(e.args[0], employee_id)
+        raise InvalidLdapUser(e.args[0], person_id)
 
     return serialized
 

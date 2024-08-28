@@ -24,7 +24,7 @@ def test_serialize_ldap_users(app, ldap_users):
     assert first_user["username"] == "newuser1"
     assert first_user["active"]
     assert first_user["user_identity_id"] == "eid123456"
-    assert first_user["preferences"]["locale"] == "it"
+    assert first_user["preferences"]["locale"] == "en"
 
     profile = first_user["user_profile"]
     assert profile["cern_department"] == "IT"
@@ -65,7 +65,7 @@ def test_serialize_alternative_mappers(app, monkeypatch, ldap_users):
     assert first_user["username"] == "newuser1"
     assert first_user["active"]
     assert first_user["user_identity_id"] == "eid123456"
-    assert first_user["preferences"]["locale"] == "it"
+    assert first_user["preferences"]["locale"] == "en"
 
     profile = first_user["user_profile"]
     assert len(profile.keys()) == 1
