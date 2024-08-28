@@ -10,10 +10,10 @@ name: CI
 
 on:
   push:
-    branches: master
+    branches: main
   pull_request:
     branches:
-      - master
+      - main
   schedule:
     # * is a special character in YAML so you have to quote this string
     - cron:  "0 3 * * 6"
@@ -65,7 +65,7 @@ jobs:
           pip install ".[$EXTRAS]"
           pip freeze
           docker --version
-          docker-compose --version
+          docker compose -v
 
       - name: Run tests
         run: ./run-tests.sh
