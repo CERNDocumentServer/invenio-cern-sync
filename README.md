@@ -4,11 +4,17 @@
     Invenio-CERN-sync is free software; you can redistribute it and/or modify it
     under the terms of the MIT License; see LICENSE file for more details.
 
-==============
- Invenio-CERN-sync
-==============
+# Invenio-CERN-sync
 
-Integrates CERN databases with Invenio.
+Integrates CERN databases and login with Invenio.
+
+## Users sync
+
+This module connects to LDAP to fetch users, updates already existing users
+and inserts missing ones.
+
+
+
 
 To get the extra user fields stored in the user profile, set the following:
 

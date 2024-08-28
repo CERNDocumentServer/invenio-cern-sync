@@ -93,13 +93,13 @@ def _insert_missing(invenio_ldap_users, log_uuid):
     return inserted
 
 
-def sync():
+def sync(**kwargs):
     """Sync CERN LDAP db with local db."""
     log_uuid = str(uuid.uuid4())
     log_info(log_uuid, "ldap_users_fetch", dict(status="started"))
     start_time = time.time()
 
-    ldap_client = LdapClient()
+    ldap_client = LdapClient(**kwargs.get("ldap", dict()))
     ldap_users = ldap_client.get_primary_accounts()
 
     log_info(

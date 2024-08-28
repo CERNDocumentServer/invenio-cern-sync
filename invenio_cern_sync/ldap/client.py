@@ -35,7 +35,7 @@ RESPONSE_FIELDS = [
 ]
 
 
-class LdapClient(object):
+class LdapClient:
     """Ldap client class for user importation/synchronization.
 
     Response example:
