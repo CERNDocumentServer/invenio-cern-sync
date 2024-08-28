@@ -8,7 +8,6 @@
 """Invenio-CERN-sync tasks."""
 
 from celery import current_app, shared_task
-
 from invenio_db import db
 
 from .users.sync import sync

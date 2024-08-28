@@ -7,15 +7,15 @@
 
 """Invenio-CERN-sync users sync API."""
 
-import uuid
 import time
+import uuid
 
 from invenio_accounts.models import User, UserIdentity
 from invenio_db import db
 from invenio_users_resources.services.users.tasks import reindex_users
 
-from ..logging import log_info, log_error, log_warning
 from ..ldap.client import LdapClient
+from ..logging import log_error, log_info, log_warning
 from .api import create_user, update_existing_user
 from .serializer import serialize_ldap_users
 
