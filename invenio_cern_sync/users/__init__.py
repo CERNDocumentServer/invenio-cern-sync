@@ -5,4 +5,4 @@
 # Invenio-CERN-sync is free software; you can redistribute it and/or modify it under
 # the terms of the MIT License; see LICENSE file for more details.
 
-"""Invenio-CERN-sync LDAP module."""
+"""Invenio-CERN-sync users module."""

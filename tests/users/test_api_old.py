@@ -14,8 +14,8 @@ from invenio_oauthclient.models import RemoteAccount
 from marshmallow import Schema, fields
 from werkzeug.local import LocalProxy
 
+from invenio_cern_sync.ldap.serializer import serialize_ldap_user
 from invenio_cern_sync.users.api import create_user, update_existing_user
-from invenio_cern_sync.users.serializer import serialize_ldap_user
 
 _datastore = LocalProxy(lambda: current_app.extensions["security"].datastore)
 
@@ -94,15 +94,15 @@ def test_update_existing_user(
     app, db, monkeypatch, ldap_users, client_id, remote_app_name
 ):
     """Test update existing user."""
-    invenio_ldap_user = serialize_ldap_user(ldap_users[0])
+    cern_user = serialize_ldap_user(ldap_users[0])
 
     # pre-insert user
     monkeypatch.setitem(app.config, "ACCOUNTS_USER_PROFILE_SCHEMA", CustomProfile())
     user = _create_user(
-        invenio_ldap_user["email"],
-        invenio_ldap_user["username"],
+        cern_user["email"],
+        cern_user["username"],
         "John Doe",
-        invenio_ldap_user["user_identity_id"],
+        cern_user["user_identity_id"],
         client_id,
         remote_app_name,
     )
@@ -110,11 +110,11 @@ def test_update_existing_user(
     ui = UserIdentity.query.filter(
         UserIdentity.id_user == user.id, UserIdentity.method == remote_app_name
     ).first()
-    update_existing_user(user, ui, invenio_ldap_user)
+    update_existing_user(user, ui, cern_user)
     db.session.commit()
 
     db_user = User.query.filter(User.id == user.id).one()
-    assert_user(db_user, invenio_ldap_user, client_id, remote_app_name)
+    assert_user(db_user, cern_user, client_id, remote_app_name)
 
 
 def test_create_new_user(app, db, monkeypatch, ldap_users, client_id, remote_app_name):
@@ -122,11 +122,11 @@ def test_create_new_user(app, db, monkeypatch, ldap_users, client_id, remote_app
     assert User.query.count() == 0
     monkeypatch.setitem(app.config, "ACCOUNTS_USER_PROFILE_SCHEMA", CustomProfile())
 
-    invenio_ldap_user = serialize_ldap_user(ldap_users[0])
-    user_id = create_user(invenio_ldap_user)
+    cern_user = serialize_ldap_user(ldap_users[0])
+    user_id = create_user(cern_user)
     db.session.commit()
 
     assert User.query.count() == 1
     db_user = User.query.first()
     assert user_id == db_user.id
-    assert_user(db_user, invenio_ldap_user, client_id, remote_app_name)
+    assert_user(db_user, cern_user, client_id, remote_app_name)

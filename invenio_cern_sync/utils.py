@@ -5,7 +5,7 @@
 # Invenio-CERN-sync is free software; you can redistribute it and/or modify it under
 # the terms of the MIT License; see LICENSE file for more details.
 
-"""Invenio-CERN-sync users serializer API."""
+"""Invenio-CERN-sync utils."""
 
 
 def first_or_raise(d, key):
@@ -19,3 +19,17 @@ def first_or_default(d, key, default=""):
         return d[key][0].decode("utf8")
     except (KeyError, IndexError, AttributeError):
         return default
+
+
+def _is_different(dict1, dict2):
+    """Return true if they differ."""
+    return (
+        len(
+            [
+                key
+                for key in dict1.keys() | dict2.keys()
+                if dict1.get(key) != dict2.get(key)
+            ]
+        )
+        > 0
+    )

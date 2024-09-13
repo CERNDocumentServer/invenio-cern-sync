@@ -5,26 +5,26 @@
 # Invenio-CERN-sync is free software; you can redistribute it and/or modify it under
 # the terms of the MIT License; see LICENSE file for more details.
 
-"""Invenio-CERN-sync users serializer API."""
+"""Invenio-CERN-sync LDAP users serializer API."""
 
 from flask import current_app
 
-from .errors import InvalidLdapUser
-from .utils import first_or_default, first_or_raise
+from ..errors import InvalidLdapUser
+from ..utils import first_or_default, first_or_raise
 
 
 def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=None):
     """Serialize LDAP user to Invenio user."""
     userprofile_mapper = (
-        userprofile_mapper or current_app.config["CERN_SYNC_USERPROFILE_MAPPER"]
+        userprofile_mapper or current_app.config["CERN_SYNC_LDAP_USERPROFILE_MAPPER"]
     )
     extra_data_mapper = (
-        extra_data_mapper or current_app.config["CERN_SYNC_USER_EXTRADATA_MAPPER"]
+        extra_data_mapper or current_app.config["CERN_SYNC_LDAP_USER_EXTRADATA_MAPPER"]
     )
     try:
         # this should always exist
         person_id = first_or_raise(ldap_user, "employeeID")
-    except:
+    except KeyError:
         raise InvalidLdapUser("employeeID", "unknown")
 
     try:

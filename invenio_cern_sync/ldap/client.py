@@ -5,7 +5,7 @@
 # Invenio-CERN-sync is free software; you can redistribute it and/or modify it under
 # the terms of the MIT License; see LICENSE file for more details.
 
-"""Invenio-CERN-sync ldap Client."""
+"""Invenio-CERN-sync LDAP Client."""
 
 import ldap
 from flask import current_app
@@ -65,7 +65,7 @@ class LdapClient:
 
     def __init__(self, ldap_url=None, base=BASE):
         """Initialize ldap connection."""
-        ldap_url = ldap_url or current_app.config["CERN_LDAP_URL"]
+        ldap_url = ldap_url or current_app.config["CERN_SYNC_LDAP_URL"]
         self._ldap = ldap.initialize(ldap_url)
         self._base = base
 

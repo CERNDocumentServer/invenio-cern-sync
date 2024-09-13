@@ -7,12 +7,15 @@
 
 """Integrates CERN databases with Invenio."""
 
-from .users.profile import remoteaccount_extradata_mapper, userprofile_mapper
+from .authz.mapper import remoteaccount_extradata_mapper as authz_extradata_mapper
+from .authz.mapper import userprofile_mapper as authz_userprofile_mapper
+from .ldap.mapper import remoteaccount_extradata_mapper as ldap_extradata_mapper
+from .ldap.mapper import userprofile_mapper as ldap_userprofile_mapper
 
-CERN_SYNC_LDAP_URL = None
-"""Set the CERN LDAP URL."""
+###################################################################################
+# Required config
 
-CERN_SYNC_CLIENT_ID = None
+CERN_SYNC_KEYCLOAK_CLIENT_ID = ""
 """Set the unique id/name of the CERN SSO app, also called `consumer_key`.
 
 This corresponds to the RemoteAccount `client_id` column.
@@ -24,11 +27,39 @@ CERN_SYNC_REMOTE_APP_NAME = None
 This corresponds to the UserIdentity `method` column.
 """
 
-CERN_SYNC_USERPROFILE_MAPPER = userprofile_mapper
-"""Map the ldap response to Invenio user profile schema.
+###################################################################################
+# Required config when using the AuthZ method to sync users, or when syncing groups
+
+CERN_SYNC_KEYCLOAK_BASE_URL = ""
+"""."""
+
+CERN_SYNC_KEYCLOAK_CLIENT_SECRET = ""
+"""."""
+
+CERN_SYNC_AUTHZ_BASE_URL = ""
+"""."""
+
+CERN_SYNC_AUTHZ_USERPROFILE_MAPPER = authz_userprofile_mapper
+"""Map the AuthZ response to Invenio user profile schema.
 
 The user profile schema is defined via ACCOUNTS_USER_PROFILE_SCHEMA.
 """
 
-CERN_SYNC_USER_EXTRADATA_MAPPER = remoteaccount_extradata_mapper
-"""Map the ldap response to the Invenio RemoteAccount `extra_data` db col."""
+CERN_SYNC_AUTHZ_USER_EXTRADATA_MAPPER = authz_extradata_mapper
+"""Map the AuthZ response to the Invenio RemoteAccount `extra_data` db col."""
+
+
+###################################################################################
+# Required config when using the LDAP method to sync users
+
+CERN_SYNC_LDAP_URL = None
+"""Set the CERN LDAP full URL."""
+
+CERN_SYNC_LDAP_USERPROFILE_MAPPER = ldap_userprofile_mapper
+"""Map the LDAP response to Invenio user profile schema.
+
+The user profile schema is defined via ACCOUNTS_USER_PROFILE_SCHEMA.
+"""
+
+CERN_SYNC_LDAP_USER_EXTRADATA_MAPPER = ldap_extradata_mapper
+"""Map the LDAP response to the Invenio RemoteAccount `extra_data` db col."""
