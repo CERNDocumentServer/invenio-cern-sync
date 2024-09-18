@@ -198,7 +198,7 @@ def sync(method="AuthZ", **kwargs):
         overridden_params = kwargs.get("authz_service", dict())
         authz_client = AuthZService(keycloak_service, **overridden_params)
 
-        overridden_params = kwargs.get("identities_fields", dict())
+        overridden_params = kwargs.get("identities", dict())
         users = authz_client.get_identities(**overridden_params)
         serializer_fn = serialize_cern_identities
     elif method == "LDAP":

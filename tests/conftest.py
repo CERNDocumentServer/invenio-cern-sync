@@ -108,3 +108,18 @@ def ldap_users():
             }
         )
     return users
+
+
+@pytest.fixture()
+def authz_groups():
+    """Return CERN groups test data."""
+    groups = []
+    for i in range(10):
+        groups.append(
+            {
+                "groupIdentifier": f"cern-accounts{i}",
+                "displayName": f"CERN Accounts {i}",
+                "description": "This is a test group {i}",
+            }
+        )
+    return groups

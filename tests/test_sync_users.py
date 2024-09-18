@@ -5,7 +5,7 @@
 # Invenio-CERN-sync is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
-"""Sync tests."""
+"""Sync users tests."""
 
 from unittest import mock
 from unittest.mock import patch
@@ -248,7 +248,7 @@ def test_sync_person_id_change(
     assert ra_change["previous_person_id"] == previous_person_id
     assert ra_change["new_person_id"] == first["personId"]
 
-    expected_log_msg = f"Person Id changed for User `{user.username}` `{user.email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Person Id from CERN DB: `{first["personId"]}`."
+    expected_log_msg = f"Person Id changed for User `{user.username}` `{user.email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Person Id from CERN DB: `{first['personId']}`."
     mock_log_warning.assert_any_call(
         mock.ANY,
         "updating_existing_users",
@@ -298,7 +298,7 @@ def test_sync_username_email_change(
     assert ra_change["new_username"] == first["upn"]
     assert ra_change["new_email"] == first["primaryAccountEmail"]
 
-    expected_log_msg = f"Username/e-mail changed for UserIdentity.id #{first["personId"]}. Local DB username/e-mail: `{previous_username}` `{previous_email}`. New from CERN DB: `{first["upn"]}` `{first["primaryAccountEmail"]}`."
+    expected_log_msg = f"Username/e-mail changed for UserIdentity.id #{first['personId']}. Local DB username/e-mail: `{previous_username}` `{previous_email}`. New from CERN DB: `{first['upn']}` `{first['primaryAccountEmail']}`."
     mock_log_warning.assert_any_call(
         mock.ANY,
         "updating_existing_users",

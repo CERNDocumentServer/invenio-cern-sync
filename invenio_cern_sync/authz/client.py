@@ -21,6 +21,7 @@ from ..errors import RequestError
 def request_with_retries(
     url, method="GET", payload=None, headers=None, retries=3, delay=5
 ):
+    """Make an HTTP request with retries."""
     for attempt in range(retries):
         try:
             if method.upper() == "GET":
@@ -148,7 +149,6 @@ class AuthZService:
 
     def get_groups(self, fields=GROUPS_FIELDS):
         """Get all groups."""
-
         query_params = [("field", value) for value in fields]
         query_params += [
             ("limit", self.limit),
