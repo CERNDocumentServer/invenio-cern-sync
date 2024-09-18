@@ -25,26 +25,58 @@ def _assert_log_called(mock_log_info):
         expected_log_uuid,
         "users_sync",
         dict(status="fetching-cern-users", method=mock.ANY),
-    ),
+    )
     mock_log_info.assert_any_call(
         expected_log_uuid, "updating_existing_users", dict(status="started")
-    ),
+    )
     mock_log_info.assert_any_call(
         expected_log_uuid,
         "updating_existing_users",
         dict(status="completed", updated_count=mock.ANY),
-    ),
+    )
     mock_log_info.assert_any_call(
         expected_log_uuid, "inserting_missing_users", dict(status="started")
-    ),
+    )
     mock_log_info.assert_any_call(
         expected_log_uuid,
         "inserting_missing_users",
         dict(status="completed", inserted_count=mock.ANY),
-    ),
+    )
     mock_log_info.assert_any_call(
         expected_log_uuid, "users_sync", dict(status="completed", time=mock.ANY)
     )
+
+
+def _assert_cern_identity(expected_identity, client_id, remote_app_name):
+    """Assert CERN identity."""
+    user = User.query.filter_by(email=expected_identity["primaryAccountEmail"]).one()
+    user_identity = UserIdentity.query.filter_by(id=expected_identity["personId"]).one()
+    remote_account = RemoteAccount.get(user.id, client_id)
+    # assert user data
+    assert user.username == expected_identity["upn"]
+    assert user.email == expected_identity["primaryAccountEmail"]
+    profile = user.user_profile
+    assert profile["cern_department"] == expected_identity["cernDepartment"]
+    assert profile["cern_group"] == expected_identity["cernGroup"]
+    assert profile["cern_section"] == expected_identity["cernSection"]
+    assert profile["family_name"] == expected_identity["lastName"]
+    assert profile["full_name"] == expected_identity["displayName"]
+    assert profile["given_name"] == expected_identity["firstName"]
+    assert (
+        profile["institute_abbreviation"] == expected_identity["instituteAbbreviation"]
+    )
+    assert profile["institute"] == expected_identity["instituteName"]
+    assert profile["mailbox"] == expected_identity.get("postOfficeBox", "")
+    assert profile["person_id"] == expected_identity["personId"]
+    preferences = user.preferences
+    assert preferences["locale"] == expected_identity["preferredCernLanguage"].lower()
+    # assert user identity data
+    assert user_identity.id_user == user.id
+    assert user_identity.method == remote_app_name
+    # assert remote account data
+    assert remote_account.extra_data["person_id"] == expected_identity["personId"]
+    assert remote_account.extra_data["uidNumber"] == expected_identity["uid"]
+    assert remote_account.extra_data["username"] == expected_identity["upn"]
 
 
 @patch("invenio_cern_sync.users.sync.KeycloakService")
@@ -64,35 +96,8 @@ def test_sync_authz(
 
     results = sync(method="AuthZ")
 
-    for cern_identity in list(cern_identities):
-        user = User.query.filter_by(email=cern_identity["primaryAccountEmail"]).one()
-        user_identity = UserIdentity.query.filter_by(id=cern_identity["personId"]).one()
-        remote_account = RemoteAccount.get(user.id, client_id)
-        # assert user data
-        assert user.username == cern_identity["upn"]
-        assert user.email == cern_identity["primaryAccountEmail"]
-        profile = user.user_profile
-        assert profile["cern_department"] == cern_identity["cernDepartment"]
-        assert profile["cern_group"] == cern_identity["cernGroup"]
-        assert profile["cern_section"] == cern_identity["cernSection"]
-        assert profile["family_name"] == cern_identity["lastName"]
-        assert profile["full_name"] == cern_identity["displayName"]
-        assert profile["given_name"] == cern_identity["firstName"]
-        assert (
-            profile["institute_abbreviation"] == cern_identity["instituteAbbreviation"]
-        )
-        assert profile["institute"] == cern_identity["instituteName"]
-        assert profile["mailbox"] == cern_identity.get("postOfficeBox", "")
-        assert profile["person_id"] == cern_identity["personId"]
-        preferences = user.preferences
-        assert preferences["locale"] == cern_identity["preferredCernLanguage"].lower()
-        # assert user identity data
-        assert user_identity.id_user == user.id
-        assert user_identity.method == remote_app_name
-        # assert remote account data
-        assert remote_account.extra_data["person_id"] == cern_identity["personId"]
-        assert remote_account.extra_data["uidNumber"] == cern_identity["uid"]
-        assert remote_account.extra_data["username"] == cern_identity["upn"]
+    for expected_identity in list(cern_identities):
+        _assert_cern_identity(expected_identity, client_id, remote_app_name)
 
     assert len(results) == len(cern_identities)
     _assert_log_called(mock_log_info)
@@ -117,7 +122,6 @@ def test_sync_ldap(mock_log_info, MockLdapClient, app, ldap_users):
         # assert user data
         assert user.username == first_or_raise(ldap_user, "cn").lower()
         assert user.email == email.lower()
-        assert user.active
         profile = user.user_profile
         assert profile["cern_department"] == first_or_default(ldap_user, "division")
         assert profile["cern_group"] == first_or_default(ldap_user, "cernGroup")
@@ -153,3 +157,150 @@ def test_sync_ldap(mock_log_info, MockLdapClient, app, ldap_users):
 
     assert len(results) == len(ldap_users)
     _assert_log_called(mock_log_info)
+
+
+@patch("invenio_cern_sync.users.sync.KeycloakService")
+@patch("invenio_cern_sync.users.sync.AuthZService")
+def test_sync_update_insert(
+    MockAuthZService,
+    MockKeycloakService,
+    app,
+    cern_identities,
+):
+    """Test sync personId change."""
+    # prepare the db with the initial data
+    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
+    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+
+    MockAuthZService.return_value.get_identities.return_value = cern_identities
+    sync(method="AuthZ")
+
+    # prepare update
+    first = cern_identities[0]
+    first["firstName"] = "Mario"
+    first["lastName"] = "Rossi"
+    first["displayName"] = "Mario Rossi"
+    first["cernDepartment"] = "EN"
+    first["cernGroup"] = "AA"
+    first["cernSection"] = "BB"
+    first["orcid"] = "0000-0002-2227-122999"
+
+    # prepare insert
+    new_user = {
+        "upn": f"fbar",
+        "displayName": f"Foo Bar",
+        "firstName": "Foo",
+        "lastName": f"Bar",
+        "personId": f"076512",
+        "uid": 39587,
+        "gid": 494853,
+        "cernDepartment": "LL",
+        "cernGroup": "TT",
+        "cernSection": "EE",
+        "instituteName": "CERN",
+        "instituteAbbreviation": "CERN",
+        "preferredCernLanguage": "EN",
+        "orcid": f"0000-0002-2227-8888",
+        "primaryAccountEmail": f"foo.bar@cern.ch",
+    }
+
+    MockAuthZService.return_value.get_identities.return_value = [first, new_user]
+    sync(method="AuthZ")
+
+    for expected_identity in [first, new_user]:
+        _assert_cern_identity(expected_identity, client_id, remote_app_name)
+
+
+@patch("invenio_cern_sync.users.sync.KeycloakService")
+@patch("invenio_cern_sync.users.sync.AuthZService")
+@patch("invenio_cern_sync.users.sync.log_warning")
+def test_sync_person_id_change(
+    mock_log_warning,
+    MockAuthZService,
+    MockKeycloakService,
+    app,
+    cern_identities,
+):
+    """Test sync personId change."""
+    # prepare the db with the initial data
+    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
+    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+
+    MockAuthZService.return_value.get_identities.return_value = cern_identities
+    sync(method="AuthZ")
+
+    # change the personId of the first user
+    first = cern_identities[0]
+    previous_person_id = first["personId"]
+    first["personId"] = "99999"
+    MockAuthZService.return_value.get_identities.return_value = [first]
+    sync(method="AuthZ")
+
+    # check that the user identity was updated, but the user was not duplicated
+    assert UserIdentity.query.filter_by(id=previous_person_id).one_or_none() is None
+    user = User.query.filter_by(email=first["primaryAccountEmail"]).one()
+    assert user.username == first["upn"]
+    user_identity = UserIdentity.query.filter_by(id_user=user.id).one()
+    assert user_identity.id == first["personId"]
+    remote_account = RemoteAccount.get(user.id, client_id)
+    ra_change = remote_account.extra_data["changes"][0]
+    assert ra_change["action"] == "personId_changed"
+    assert ra_change["previous_person_id"] == previous_person_id
+    assert ra_change["new_person_id"] == first["personId"]
+
+    expected_log_msg = f"Person Id changed for User `{user.username}` `{user.email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Person Id from CERN DB: `{first["personId"]}`."
+    mock_log_warning.assert_any_call(
+        mock.ANY,
+        "updating_existing_users",
+        dict(msg=expected_log_msg),
+    ),
+
+
+@patch("invenio_cern_sync.users.sync.KeycloakService")
+@patch("invenio_cern_sync.users.sync.AuthZService")
+@patch("invenio_cern_sync.users.sync.log_warning")
+def test_sync_username_email_change(
+    mock_log_warning,
+    MockAuthZService,
+    MockKeycloakService,
+    app,
+    cern_identities,
+):
+    """Test sync username/email change."""
+    # prepare the db with the initial data
+    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
+    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+
+    MockAuthZService.return_value.get_identities.return_value = cern_identities
+    sync(method="AuthZ")
+
+    # change the email/username of the first user
+    first = cern_identities[0]
+    previous_username = first["upn"]
+    previous_email = first["primaryAccountEmail"]
+    first["upn"] = "mrossi"
+    first["primaryAccountEmail"] = "mrossi@cern.ch"
+    MockAuthZService.return_value.get_identities.return_value = [first]
+    sync(method="AuthZ")
+
+    # check that the user identity was updated, but the user was not duplicated
+    assert User.query.filter_by(username=previous_username).one_or_none() is None
+    assert User.query.filter_by(email=previous_email).one_or_none() is None
+    user_identity = UserIdentity.query.filter_by(id=first["personId"]).one()
+    user = user_identity.user
+    assert user.username == first["upn"]
+    assert user.email == first["primaryAccountEmail"]
+    remote_account = RemoteAccount.get(user.id, client_id)
+    ra_change = remote_account.extra_data["changes"][0]
+    assert ra_change["action"] == "userdata_changed"
+    assert ra_change["previous_username"] == previous_username
+    assert ra_change["previous_email"] == previous_email
+    assert ra_change["new_username"] == first["upn"]
+    assert ra_change["new_email"] == first["primaryAccountEmail"]
+
+    expected_log_msg = f"Username/e-mail changed for UserIdentity.id #{first["personId"]}. Local DB username/e-mail: `{previous_username}` `{previous_email}`. New from CERN DB: `{first["upn"]}` `{first["primaryAccountEmail"]}`."
+    mock_log_warning.assert_any_call(
+        mock.ANY,
+        "updating_existing_users",
+        dict(msg=expected_log_msg),
+    ),

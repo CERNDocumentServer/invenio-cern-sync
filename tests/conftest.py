@@ -75,7 +75,7 @@ def cern_identities():
                 "instituteAbbreviation": "CERN",
                 "preferredCernLanguage": "EN",
                 "orcid": f"0000-0002-2227-122{i}",
-                "primaryAccountEmail": f"john.doe{i}@test.com",
+                "primaryAccountEmail": f"john.doe{i}@cern.ch",
             }
         )
     return identities
@@ -100,7 +100,7 @@ def ldap_users():
                 "division": [b"IT"],
                 "employeeID": [bytes("1234" + str(i), encoding="utf-8")],
                 "givenName": [b"John"],
-                "mail": [bytes("john.doe" + str(i) + "@test.com", encoding="utf-8")],
+                "mail": [bytes("john.doe" + str(i) + "@cern.ch", encoding="utf-8")],
                 "postOfficeBox": [bytes("M123ABC" + str(i), encoding="utf-8")],
                 "preferredLanguage": [b"EN"],
                 "sn": [bytes("Doe " + str(i), encoding="utf-8")],

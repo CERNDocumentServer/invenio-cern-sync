@@ -31,8 +31,6 @@ def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=No
         serialized = dict(
             email=first_or_raise(ldap_user, "mail").lower(),
             username=first_or_raise(ldap_user, "cn").lower(),
-            active=first_or_default(ldap_user, "cernActiveStatus", "Active").lower()
-            == "active",
             user_profile=userprofile_mapper(ldap_user),
             preferences=dict(
                 locale=first_or_default(ldap_user, "preferredLanguage", "en").lower()

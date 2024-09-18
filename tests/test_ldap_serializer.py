@@ -20,9 +20,8 @@ def test_serialize_ldap_users(app, ldap_users):
     invenio_users = serialize_ldap_users(ldap_users)
     first_user = next(invenio_users)
 
-    assert first_user["email"] == "john.doe0@test.com"
+    assert first_user["email"] == "john.doe0@cern.ch"
     assert first_user["username"] == "jdoe0"
-    assert first_user["active"]
     assert first_user["user_identity_id"] == "12340"
     assert first_user["preferences"]["locale"] == "en"
 
@@ -61,9 +60,8 @@ def test_serialize_alternative_mappers(app, monkeypatch, ldap_users):
     invenio_users = serialize_ldap_users(ldap_users)
     first_user = next(invenio_users)
 
-    assert first_user["email"] == "john.doe0@test.com"
+    assert first_user["email"] == "john.doe0@cern.ch"
     assert first_user["username"] == "jdoe0"
-    assert first_user["active"]
     assert first_user["user_identity_id"] == "12340"
     assert first_user["preferences"]["locale"] == "en"
 
@@ -89,7 +87,7 @@ def test_serialize_invalid_ldap_users(app, missing_field):
     """Test serialization of invalid LDAP user."""
     required_fields = {
         "employeeID": [b"12340"],
-        "mail": [b"john.doe0@test.com"],
+        "mail": [b"john.doe0@cern.ch"],
         "cn": [b"jdoe0"],
         "uidNumber": [b"222220"],
     }
@@ -108,7 +106,7 @@ def test_serialize_ldap_users_missing_optional_fields(app):
     ldap_users = [
         {
             "employeeID": [b"12340"],
-            "mail": [b"john.doe0@test.com"],
+            "mail": [b"john.doe0@cern.ch"],
             "cn": [b"jdoe0"],
             "uidNumber": [b"222220"],
         }
@@ -117,9 +115,8 @@ def test_serialize_ldap_users_missing_optional_fields(app):
     invenio_users = serialize_ldap_users(ldap_users)
     first_user = next(invenio_users)
 
-    assert first_user["email"] == "john.doe0@test.com"
+    assert first_user["email"] == "john.doe0@cern.ch"
     assert first_user["username"] == "jdoe0"
-    assert first_user["active"]
     assert first_user["user_identity_id"] == "12340"
     assert first_user["preferences"]["locale"] == "en"
 

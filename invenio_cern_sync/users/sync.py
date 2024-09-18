@@ -39,7 +39,7 @@ def _log_user_data_changed(
     # record this change in the RemoteAccount.extra_data
     ra_extra_data.append(
         dict(
-            date=datetime.now(datetime.UTC),
+            datetime=datetime.now().isoformat(),
             action="userdata_changed",
             previous_username=previous_username,
             previous_email=previous_email,
@@ -66,7 +66,7 @@ def _log_person_id_changed(
     # record this change in the RemoteAccount.extra_data
     ra_extra_data.append(
         dict(
-            date=datetime.now(datetime.UTC),
+            datetime=datetime.now().isoformat(),
             action="personId_changed",
             previous_person_id=previous_person_id,
             new_person_id=new_person_id,
@@ -104,7 +104,7 @@ def _update_existing(users, serializer_fn, log_uuid):
             # We start checking first if we found the user by `person_id`
             # The assumption is that `person_id` and `e-mail/username` cannot both
             # have changed since the previous sync.
-            if user_identity and not user or user.id != user_identity.id_user:
+            if user_identity and (not user or user.id != user_identity.id_user):
                 # The `e-mail/username` changed.
                 # The User `e-mail/username` referenced by this `person_id`
                 # will have to be updated.
@@ -123,7 +123,7 @@ def _update_existing(users, serializer_fn, log_uuid):
                     new_email=invenio_user["email"],
                 )
                 invenio_user["remote_account_extra_data"]["changes"] = ra_extra_data
-            elif user and not user_identity or user_identity.id_user != user.id:
+            elif user and (not user_identity or user_identity.id_user != user.id):
                 # The `person_id` changed.
                 # The `person_id` of the UserIdentity associated to the User
                 # will have to be updated.

@@ -16,12 +16,12 @@ from invenio_oauthclient.models import RemoteAccount, UserIdentity
 from invenio_cern_sync.utils import _is_different
 
 
-def _create_user(cern_user, active=True):
+def _create_user(cern_user):
     """Create new user."""
     user = User(
         email=cern_user["email"],
         username=cern_user["username"],
-        active=active,
+        active=True,
         user_profile=cern_user["user_profile"],
         preferences=cern_user["preferences"],
     )
@@ -56,7 +56,7 @@ def _create_remote_account(user, cern_user):
     )
 
 
-def create_user(cern_user, active=True, auto_confirm=True):
+def create_user(cern_user, auto_confirm=True):
     """Create Invenio user.
 
     :param user: dict. Expected format:
@@ -67,11 +67,10 @@ def create_user(cern_user, active=True, auto_confirm=True):
             user_identity_id: <string>,
             remote_account_extra_data: <dict> (optional)
         }
-    :param active: set the user `active`
     :param auto_confirm: set the user `confirmed`
     :return: the newly created Invenio user id.
     """
-    user = _create_user(cern_user, active=active)
+    user = _create_user(cern_user)
     user_id = user.id
 
     _create_user_identity(user, cern_user)
@@ -92,12 +91,10 @@ def _update_user(user, cern_user):
     user_changed = (
         user.email != cern_user["email"]
         or user.username != cern_user["username"].lower()
-        or user.active != cern_user["active"]
     )
     if user_changed:
         user.email = cern_user["email"]
         user.username = cern_user["username"]
-        user.active = cern_user["active"]
 
     # check if any key/value in CERN is different from the local user.user_profile
     local_up = user.user_profile

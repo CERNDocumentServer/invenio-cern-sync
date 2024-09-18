@@ -87,7 +87,7 @@ def test_get_identities(
                 "instituteAbbreviation": "CERN",
                 "preferredCernLanguage": "EN",
                 "orcid": "0000-0002-2227-1229",
-                "primaryAccountEmail": "john.doe@test.com",
+                "primaryAccountEmail": "john.doe@cern.ch",
                 "blocked": False,
             }
         ],

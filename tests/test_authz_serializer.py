@@ -26,7 +26,7 @@ def test_serialize(app, cern_identities):
     assert len(serialized_identities) == 2
 
     for i in range(2):
-        assert serialized_identities[i]["email"] == f"john.doe{i}@test.com"
+        assert serialized_identities[i]["email"] == f"john.doe{i}@cern.ch"
         assert serialized_identities[i]["username"] == f"jdoe{i}"
         assert serialized_identities[i]["user_profile"] == {
             "cern_department": "IT",
@@ -57,7 +57,7 @@ def test_serialize_custom_mapper(app, cern_identities):
     assert len(serialized_identities) == 2
 
     for i in range(2):
-        assert serialized_identities[i]["email"] == f"john.doe{i}@test.com"
+        assert serialized_identities[i]["email"] == f"john.doe{i}@cern.ch"
         assert serialized_identities[i]["username"] == f"jdoe{i}"
         assert serialized_identities[i]["user_profile"] == {"name": "Test User"}
         assert serialized_identities[i]["preferences"] == {"locale": "en"}

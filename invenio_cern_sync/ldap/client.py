@@ -12,7 +12,7 @@ from flask import current_app
 
 BASE = "OU=Users,OU=Organic Units,DC=cern,DC=ch"
 
-PRIMARY_ACCOUNTS_FILTER = "(&(cernAccountType=Primary))"
+PRIMARY_ACCOUNTS_FILTER = "(&(cernAccountType=Primary)(cernActiveStatus=Active))"
 
 RESPONSE_FIELDS = [
     "cernAccountType",
