@@ -13,9 +13,6 @@ from datetime import datetime
 
 from invenio_accounts.models import User, UserIdentity
 from invenio_db import db
-from invenio_users_resources.services.users.tasks import reindex_users
-from py import log
-from pytz import UTC
 
 from ..authz.client import AuthZService, KeycloakService
 from ..authz.serializer import serialize_cern_identities
@@ -78,19 +75,19 @@ def _log_person_id_changed(
     return ra_extra_data
 
 
-def _update_existing(invenio_users, log_uuid):
+def _update_existing(users, serializer_fn, log_uuid):
     """Update existing users and return a list of missing users to insert."""
     missing = []
     updated = set()
     log_action = "updating_existing_users"
     log_info(log_uuid, log_action, dict(status="started"))
 
-    for invenio_user in invenio_users(invenio_users):
+    for invenio_user in serializer_fn(users):
         user = user_identity = None
 
         # Fetch the local user by `person_id`, the CERN unique id
         user_identity = UserIdentity.query.filter_by(
-            id=invenio_user["person_id"]
+            id=invenio_user["user_identity_id"]
         ).one_or_none()
         # Fetch the local user also by email and username, so we can compare
         user = User.query.filter_by(
@@ -119,7 +116,7 @@ def _update_existing(invenio_users, log_uuid):
                     log_uuid,
                     log_action,
                     ra_extra_data=_ra_extra_data,
-                    person_id=invenio_user["person_id"],
+                    person_id=invenio_user["user_identity_id"],
                     previous_username=user.username,
                     previous_email=user.email,
                     new_username=invenio_user["username"],
@@ -142,7 +139,7 @@ def _update_existing(invenio_users, log_uuid):
                     username=invenio_user["username"],
                     email=invenio_user["email"],
                     previous_person_id=user_identity.id,
-                    new_person_id=invenio_user["person_id"],
+                    new_person_id=invenio_user["user_identity_id"],
                 )
                 invenio_user["remote_account_extra_data"]["changes"] = ra_extra_data
             else:
@@ -166,7 +163,7 @@ def _insert_missing(invenio_users, log_uuid):
     log_info(
         log_uuid,
         "inserting_missing_users",
-        dict(status="started", count=len(invenio_users)),
+        dict(status="started"),
     )
 
     inserted = set()
@@ -191,7 +188,7 @@ def sync(method="AuthZ", **kwargs):
         )
 
     log_uuid = str(uuid.uuid4())
-    log_info(log_uuid, "users_sync", dict(status="started", method=method))
+    log_info(log_uuid, "users_sync", dict(status="fetching-cern-users", method=method))
     start_time = time.time()
 
     if method == "AuthZ":
@@ -202,24 +199,24 @@ def sync(method="AuthZ", **kwargs):
         authz_client = AuthZService(keycloak_service, **overridden_params)
 
         overridden_params = kwargs.get("identities_fields", dict())
-        cern_identities = authz_client.get_identities(**overridden_params)
-        invenio_users = serialize_cern_identities(cern_identities)
+        users = authz_client.get_identities(**overridden_params)
+        serializer_fn = serialize_cern_identities
     elif method == "LDAP":
         overridden_params = kwargs.get("ldap", dict())
         ldap_client = LdapClient(**overridden_params)
-        ldap_users = ldap_client.get_primary_accounts()
-        invenio_users = serialize_ldap_users(ldap_users)
+        users = ldap_client.get_primary_accounts()
+        serializer_fn = serialize_ldap_users
     else:
         raise ValueError(
             f"Unknown param method {method}. Possible values `AuthZ` or `LDAP`."
         )
 
-    log_info(log_uuid, "users_sync", dict(status="completed", count=len(invenio_users)))
-
-    missing_invenio_users, updated_ids = _update_existing(invenio_users, log_uuid)
+    missing_invenio_users, updated_ids = _update_existing(
+        users, serializer_fn, log_uuid
+    )
     inserted_ids = _insert_missing(missing_invenio_users, log_uuid)
 
-    reindex_users.delay(updated_ids + inserted_ids)
-
     total_time = time.time() - start_time
-    log_info(log_uuid, "sync_done", dict(time=total_time))
+    log_info(log_uuid, "users_sync", dict(status="completed", time=total_time))
+
+    return list(updated_ids.union(inserted_ids))

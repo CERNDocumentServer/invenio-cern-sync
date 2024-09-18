@@ -17,8 +17,6 @@ def serialize_cern_identity(cern_identity):
     userprofile_mapper = current_app.config["CERN_SYNC_AUTHZ_USERPROFILE_MAPPER"]
     extra_data_mapper = current_app.config["CERN_SYNC_AUTHZ_USER_EXTRADATA_MAPPER"]
     try:
-        print(100 * "*")
-        print(cern_identity)
         # this should always exist
         person_id = cern_identity["personId"]
     except KeyError:
