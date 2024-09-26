@@ -15,14 +15,13 @@ from marshmallow import Schema, fields
 class CustomProfile(Schema):
     """A custom user profile schema that matches the default mapper."""
 
+    affiliations = fields.String()
     cern_department = fields.String()
     cern_group = fields.String()
     cern_section = fields.String()
     family_name = fields.String()
     full_name = fields.String()
     given_name = fields.String()
-    institute_abbreviation = fields.String()
-    institute = fields.String()
     mailbox = fields.String()
     person_id = fields.String()
 
@@ -34,16 +33,12 @@ def client_id(app_config):
 
 
 @pytest.fixture(scope="module")
-def remote_app_name(app_config):
-    """Return a test remote app name."""
-    return "cern"
-
-
-@pytest.fixture(scope="module")
-def app_config(app_config, client_id, remote_app_name):
+def app_config(
+    app_config,
+    client_id,
+):
     """Application config override."""
-    app_config["CERN_SYNC_REMOTE_APP_NAME"] = remote_app_name
-    app_config["CERN_SYNC_KEYCLOAK_CLIENT_ID"] = client_id
+    app_config["CERN_APP_CREDENTIALS"] = {"consumer_key": client_id}
     app_config["ACCOUNTS_USER_PROFILE_SCHEMA"] = CustomProfile()
     return app_config
 
@@ -72,7 +67,6 @@ def cern_identities():
                 "cernGroup": "CA",
                 "cernSection": "IR",
                 "instituteName": "CERN",
-                "instituteAbbreviation": "CERN",
                 "preferredCernLanguage": "EN",
                 "orcid": f"0000-0002-2227-122{i}",
                 "primaryAccountEmail": f"john.doe{i}@cern.ch",
@@ -91,7 +85,6 @@ def ldap_users():
                 "cernAccountType": [b"Primary"],
                 "cernActiveStatus": [b"Active"],
                 "cernGroup": [b"CA"],
-                "cernInstituteAbbreviation": [b"CERN"],
                 "cernInstituteName": [b"CERN"],
                 "cernSection": [b"IR"],
                 "cn": [bytes("jdoe" + str(i), encoding="utf-8")],

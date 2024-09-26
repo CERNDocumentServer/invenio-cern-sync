@@ -29,14 +29,13 @@ def test_serialize(app, cern_identities):
         assert serialized_identities[i]["email"] == f"john.doe{i}@cern.ch"
         assert serialized_identities[i]["username"] == f"jdoe{i}"
         assert serialized_identities[i]["user_profile"] == {
+            "affiliations": "CERN",
             "cern_department": "IT",
             "cern_group": "CA",
             "cern_section": "IR",
             "family_name": f"Doe {i}",
             "full_name": f"John Doe {i}",
             "given_name": "John",
-            "institute_abbreviation": "CERN",
-            "institute": "CERN",
             "mailbox": "",
             "person_id": f"1234{i}",
         }

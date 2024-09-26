@@ -13,6 +13,7 @@ from invenio_accounts.models import User
 from invenio_db import db
 from invenio_oauthclient.models import RemoteAccount, UserIdentity
 
+from invenio_cern_sync.sso import cern_remote_app_name
 from invenio_cern_sync.utils import _is_different
 
 
@@ -33,18 +34,17 @@ def _create_user(cern_user):
 
 def _create_user_identity(user, cern_user):
     """Create new user identity."""
-    remote_app_name = current_app.config["CERN_SYNC_REMOTE_APP_NAME"]
-    assert remote_app_name
+    assert cern_remote_app_name
     return UserIdentity.create(
         user,
-        remote_app_name,
+        cern_remote_app_name,
         cern_user["user_identity_id"],
     )
 
 
 def _create_remote_account(user, cern_user):
     """Return new user entry."""
-    client_id = current_app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
+    client_id = current_app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
     assert client_id
     return RemoteAccount.create(
         client_id=client_id,
@@ -134,7 +134,7 @@ def _update_useridentity(user_id, user_identity, cern_user):
 def _update_remote_account(user, cern_user):
     """Update RemoteAccount table."""
     extra_data = cern_user["remote_account_extra_data"]
-    client_id = current_app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
+    client_id = current_app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
     assert client_id
     remote_account = RemoteAccount.get(user.id, client_id)
 

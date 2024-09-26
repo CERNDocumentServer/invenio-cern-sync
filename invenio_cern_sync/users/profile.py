@@ -19,8 +19,6 @@ class CERNUserProfileSchema(Schema):
     full_name = fields.String()
     given_name = fields.String()
     group = fields.String()
-    institute_abbreviation = fields.String()
-    institute = fields.String()
     mailbox = fields.String()
     orcid = fields.String()
     person_id = fields.String()

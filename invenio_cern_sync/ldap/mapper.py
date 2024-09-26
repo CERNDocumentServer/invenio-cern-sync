@@ -13,20 +13,16 @@ from ..utils import first_or_default, first_or_raise
 def userprofile_mapper(ldap_user):
     """Map the LDAP fields to the Invenio user profile schema.
 
-    :param ldap_user: the ldap dict
-    :param profile_schema: the Invenio user profile schema to map to
-    :return: a serialized dict, containing all the keys that will appear in the
-        User.profile JSON column. Any unwanted key should be removed.
-    """
+    The returned dict structure must match the user profile schema defined via
+    the config ACCOUNTS_USER_PROFILE_SCHEMA."""
     return dict(
+        affiliations=first_or_default(ldap_user, "cernInstituteName"),
         cern_department=first_or_default(ldap_user, "division"),
         cern_group=first_or_default(ldap_user, "cernGroup"),
         cern_section=first_or_default(ldap_user, "cernSection"),
         family_name=first_or_default(ldap_user, "sn"),
         full_name=first_or_default(ldap_user, "displayName"),
         given_name=first_or_default(ldap_user, "givenName"),
-        institute_abbreviation=first_or_default(ldap_user, "cernInstituteAbbreviation"),
-        institute=first_or_default(ldap_user, "cernInstituteName"),
         mailbox=first_or_default(ldap_user, "postOfficeBox"),
         person_id=first_or_default(ldap_user, "employeeID"),
     )

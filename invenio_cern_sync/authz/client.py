@@ -45,9 +45,12 @@ class KeycloakService:
     def __init__(self, base_url=None, client_id=None, client_secret=None):
         """Constructor."""
         self.base_url = base_url or current_app.config["CERN_SYNC_KEYCLOAK_BASE_URL"]
-        self.client_id = client_id or current_app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
+        self.client_id = (
+            client_id or current_app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
+        )
         self.client_secret = (
-            client_secret or current_app.config["CERN_SYNC_KEYCLOAK_CLIENT_SECRET"]
+            client_secret
+            or current_app.config["CERN_APP_CREDENTIALS"]["consumer_secret"]
         )
 
     def get_authz_token(self):
@@ -75,7 +78,6 @@ IDENTITY_FIELDS = [
     "cernGroup",  # "CA"
     "cernSection",  # "IR"
     "instituteName",  # "CERN"
-    "instituteAbbreviation",  # "CERN"
     "preferredCernLanguage",  # "EN"
     "orcid",
     "primaryAccountEmail",

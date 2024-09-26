@@ -20,8 +20,10 @@ def app_with_extra_config(app):
     app.config.update(
         {
             "CERN_SYNC_KEYCLOAK_BASE_URL": "https://keycloak.test",
-            "CERN_SYNC_KEYCLOAK_CLIENT_ID": "test-client-id",
-            "CERN_SYNC_KEYCLOAK_CLIENT_SECRET": "test-client-secret",
+            "CERN_APP_CREDENTIALS": {
+                "consumer_key": "test-client-id",
+                "consumer_secret": "test-client-secret",
+            },
             "CERN_SYNC_AUTHZ_BASE_URL": "https://authz.test",
         }
     )

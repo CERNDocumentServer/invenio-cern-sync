@@ -11,21 +11,18 @@
 def userprofile_mapper(cern_identity):
     """Map the CERN Identity fields to the Invenio user profile schema.
 
-    :param cern_identity: the identity dict
-    :param profile_schema: the Invenio user profile schema to map to
-    :return: a serialized dict, containing all the keys that will appear in the
-        User.profile JSON column. Any unwanted key should be removed.
-    """
+    The returned dict structure must match the user profile schema defined via
+    the config ACCOUNTS_USER_PROFILE_SCHEMA."""
     return dict(
+        affiliations=cern_identity["instituteName"],
         cern_department=cern_identity["cernDepartment"],
         cern_group=cern_identity["cernGroup"],
         cern_section=cern_identity["cernSection"],
         family_name=cern_identity["lastName"],
         full_name=cern_identity["displayName"],
         given_name=cern_identity["firstName"],
-        institute_abbreviation=cern_identity["instituteAbbreviation"],
-        institute=cern_identity["instituteName"],
         mailbox=cern_identity.get("postOfficeBox", ""),
+        orcid=cern_identity.get("orcid", ""),
         person_id=cern_identity["personId"],
     )
 

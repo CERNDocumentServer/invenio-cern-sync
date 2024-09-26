@@ -13,6 +13,7 @@ from unittest.mock import patch
 from invenio_accounts.models import User
 from invenio_oauthclient.models import RemoteAccount, UserIdentity
 
+from invenio_cern_sync.sso import cern_remote_app_name
 from invenio_cern_sync.users.sync import sync
 from invenio_cern_sync.utils import first_or_default, first_or_raise
 
@@ -47,7 +48,7 @@ def _assert_log_called(mock_log_info):
     )
 
 
-def _assert_cern_identity(expected_identity, client_id, remote_app_name):
+def _assert_cern_identity(expected_identity, client_id):
     """Assert CERN identity."""
     user = User.query.filter_by(email=expected_identity["primaryAccountEmail"]).one()
     user_identity = UserIdentity.query.filter_by(id=expected_identity["personId"]).one()
@@ -56,23 +57,20 @@ def _assert_cern_identity(expected_identity, client_id, remote_app_name):
     assert user.username == expected_identity["upn"]
     assert user.email == expected_identity["primaryAccountEmail"]
     profile = user.user_profile
+    assert profile["affiliations"] == expected_identity["affiliations"]
     assert profile["cern_department"] == expected_identity["cernDepartment"]
     assert profile["cern_group"] == expected_identity["cernGroup"]
     assert profile["cern_section"] == expected_identity["cernSection"]
     assert profile["family_name"] == expected_identity["lastName"]
     assert profile["full_name"] == expected_identity["displayName"]
     assert profile["given_name"] == expected_identity["firstName"]
-    assert (
-        profile["institute_abbreviation"] == expected_identity["instituteAbbreviation"]
-    )
-    assert profile["institute"] == expected_identity["instituteName"]
     assert profile["mailbox"] == expected_identity.get("postOfficeBox", "")
     assert profile["person_id"] == expected_identity["personId"]
     preferences = user.preferences
     assert preferences["locale"] == expected_identity["preferredCernLanguage"].lower()
     # assert user identity data
     assert user_identity.id_user == user.id
-    assert user_identity.method == remote_app_name
+    assert user_identity.method == cern_remote_app_name
     # assert remote account data
     assert remote_account.extra_data["person_id"] == expected_identity["personId"]
     assert remote_account.extra_data["uidNumber"] == expected_identity["uid"]
@@ -91,13 +89,12 @@ def test_sync_authz(
 ):
     """Test sync with AuthZ."""
     MockAuthZService.return_value.get_identities.return_value = cern_identities
-    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
-    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+    client_id = app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
 
     results = sync(method="AuthZ")
 
     for expected_identity in list(cern_identities):
-        _assert_cern_identity(expected_identity, client_id, remote_app_name)
+        _assert_cern_identity(expected_identity, client_id)
 
     assert len(results) == len(cern_identities)
     _assert_log_called(mock_log_info)
@@ -108,8 +105,7 @@ def test_sync_authz(
 def test_sync_ldap(mock_log_info, MockLdapClient, app, ldap_users):
     """Test sync with LDAP."""
     MockLdapClient.return_value.get_primary_accounts.return_value = ldap_users
-    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
-    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+    client_id = app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
 
     results = sync(method="LDAP")
 
@@ -123,16 +119,15 @@ def test_sync_ldap(mock_log_info, MockLdapClient, app, ldap_users):
         assert user.username == first_or_raise(ldap_user, "cn").lower()
         assert user.email == email.lower()
         profile = user.user_profile
+        assert profile["affiliations"] == [
+            first_or_default(ldap_user, "cernInstituteName")
+        ]
         assert profile["cern_department"] == first_or_default(ldap_user, "division")
         assert profile["cern_group"] == first_or_default(ldap_user, "cernGroup")
         assert profile["cern_section"] == first_or_default(ldap_user, "cernSection")
         assert profile["family_name"] == first_or_default(ldap_user, "sn")
         assert profile["full_name"] == first_or_default(ldap_user, "displayName")
         assert profile["given_name"] == first_or_default(ldap_user, "givenName")
-        assert profile["institute_abbreviation"] == first_or_default(
-            ldap_user, "cernInstituteAbbreviation"
-        )
-        assert profile["institute"] == first_or_default(ldap_user, "cernInstituteName")
         assert profile["mailbox"] == first_or_default(ldap_user, "postOfficeBox")
         assert profile["person_id"] == person_id
         preferences = user.preferences
@@ -142,7 +137,7 @@ def test_sync_ldap(mock_log_info, MockLdapClient, app, ldap_users):
         )
         # assert user identity data
         assert user_identity.id_user == user.id
-        assert user_identity.method == remote_app_name
+        assert user_identity.method == cern_remote_app_name
         # assert remote account data
         assert remote_account.extra_data["person_id"] == first_or_raise(
             ldap_user, "employeeID"
@@ -169,8 +164,7 @@ def test_sync_update_insert(
 ):
     """Test sync personId change."""
     # prepare the db with the initial data
-    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
-    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+    client_id = app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
 
     MockAuthZService.return_value.get_identities.return_value = cern_identities
     sync(method="AuthZ")
@@ -208,7 +202,7 @@ def test_sync_update_insert(
     sync(method="AuthZ")
 
     for expected_identity in [first, new_user]:
-        _assert_cern_identity(expected_identity, client_id, remote_app_name)
+        _assert_cern_identity(expected_identity, client_id)
 
 
 @patch("invenio_cern_sync.users.sync.KeycloakService")
@@ -223,8 +217,7 @@ def test_sync_person_id_change(
 ):
     """Test sync personId change."""
     # prepare the db with the initial data
-    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
-    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+    client_id = app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
 
     MockAuthZService.return_value.get_identities.return_value = cern_identities
     sync(method="AuthZ")
@@ -268,8 +261,7 @@ def test_sync_username_email_change(
 ):
     """Test sync username/email change."""
     # prepare the db with the initial data
-    client_id = app.config["CERN_SYNC_KEYCLOAK_CLIENT_ID"]
-    remote_app_name = app.config["CERN_SYNC_REMOTE_APP_NAME"]
+    client_id = app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
 
     MockAuthZService.return_value.get_identities.return_value = cern_identities
     sync(method="AuthZ")

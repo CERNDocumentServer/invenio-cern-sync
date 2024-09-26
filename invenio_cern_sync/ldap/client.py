@@ -18,7 +18,6 @@ RESPONSE_FIELDS = [
     "cernAccountType",
     "cernActiveStatus",
     "cernGroup",
-    "cernInstituteAbbreviation",
     "cernInstituteName",
     "cernSection",
     "cn",  # username
