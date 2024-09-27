@@ -106,7 +106,13 @@ def sync_groups_task():
 
 ### LDAP
 
-You can use LDAP instead. Define the LDAP url:
+You can use LDAP instead. Install this module with the ldap extra dependency:
+
+```shell
+pip install invenio-cern-sync[ldap]
+```
+
+Define the LDAP url:
 
 ```python
 CERN_SYNC_LDAP_URL = <url>

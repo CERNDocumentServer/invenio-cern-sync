@@ -22,7 +22,8 @@ def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=No
         extra_data_mapper or current_app.config["CERN_SYNC_LDAP_USER_EXTRADATA_MAPPER"]
     )
     try:
-        # this should always exist
+        # The assumption here is that we only sync CERN primary accounts.
+        # The personId does not exist for external accounts (EduGain, social logins or guest accounts)
         person_id = first_or_raise(ldap_user, "employeeID")
     except KeyError:
         raise InvalidLdapUser("employeeID", "unknown")

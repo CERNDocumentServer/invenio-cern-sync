@@ -132,35 +132,43 @@ class AuthZService:
                 yield resp.json()["data"]
 
     def get_identities(self, fields=IDENTITY_FIELDS):
-        """Get all identities."""
-        query_params = [("field", value) for value in IDENTITY_FIELDS]
-        query_params += [
-            ("limit", self.limit),
-            ("filter", "type:Person"),
-            ("filter", "blocked:false"),
-        ]
-        query_string = urlencode(query_params)
+        """Get all identities.
 
+        It will retrieve all user identities (type:Person), with a primary account
+        (source:cern) and actively at CERN (activeUser:true).
+        If you need to also get externals with EduGain account, you need to use
+        source:edugain and omit the activeUser filter, as external don't have this."""
         token = self.keycloak_service.get_authz_token()
         headers = {
             "Authorization": f"Bearer {token}",
             "accept": "application/json",
         }
+
+        query_params = [("field", value) for value in fields]
+        query_params += [
+            ("limit", self.limit),
+            ("filter", "type:Person"),
+            ("filter", "source:cern"),
+            ("filter", "activeUser:true"),
+        ]
+        query_string = urlencode(query_params)
+
         url_without_offset = f"{self.base_url}/api/v1.0/Identity?{query_string}"
         return self._fetch_all(url_without_offset, headers)
 
     def get_groups(self, fields=GROUPS_FIELDS):
         """Get all groups."""
+        token = self.keycloak_service.get_authz_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "accept": "application/json",
+        }
+
         query_params = [("field", value) for value in fields]
         query_params += [
             ("limit", self.limit),
         ]
         query_string = urlencode(query_params)
 
-        token = self.keycloak_service.get_authz_token()
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "accept": "application/json",
-        }
         url_without_offset = f"{self.base_url}/api/v1.0/Groups?{query_string}"
         return self._fetch_all(url_without_offset, headers)

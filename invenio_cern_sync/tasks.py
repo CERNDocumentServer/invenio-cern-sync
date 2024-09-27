@@ -7,23 +7,41 @@
 
 """Invenio-CERN-sync tasks."""
 
-from celery import current_app, shared_task
+from flask import current_app
+from celery import shared_task
 from invenio_db import db
 
-from .users.sync import sync
+from .users.sync import sync as users_sync
+from .groups.sync import sync as groups_sync
 
 
 @shared_task
-def sync_users():
-    """Task to sync users with LDAP."""
+def sync_users(*args, **kwargs):
+    """Task to sync users with CERN database."""
     if current_app.config.get("DEBUG", True):
         current_app.logger.warning(
-            "Users sync with CERN LDAP disabled, the DEBUG env var is True."
+            "Users sync disabled, the DEBUG env var is True."
         )
         return
 
     try:
-        sync()
+        users_sync(*args, **kwargs)
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception(e)
+
+
+@shared_task
+def sync_groups(*args, **kwargs):
+    """Task to sync groups with CERN database."""
+    if current_app.config.get("DEBUG", True):
+        current_app.logger.warning(
+            "Groups sync disabled, the DEBUG env var is True."
+        )
+        return
+
+    try:
+        groups_sync(*args, **kwargs)
     except Exception as e:
         db.session.rollback()
         current_app.logger.exception(e)

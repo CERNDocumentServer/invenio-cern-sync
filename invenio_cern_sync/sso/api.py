@@ -35,22 +35,22 @@ def confirm_registration_form(*args, **kwargs):
 ######################################################################################
 # User handler
 
-
 def cern_setup_handler(remote, token, resp):
     """Perform additional setup after the user has been logged in."""
     token_user_info, _ = get_user_info(remote, resp)
 
     with db.session.begin_nested():
         username = token_user_info["sub"]
-        person_id = token_user_info["cern_person_id"]
+        # cern_person_id is not set for non-CERN users (EduGain)
+        external_id = token_user_info.get("cern_person_id", username)
         extra_data = {
             "keycloak_id": username,
-            "person_id": person_id,
+            "person_id": external_id,
         }
         token.remote_account.extra_data = extra_data
 
         user = token.remote_account.user
-        user_identity = {"id": person_id, "method": remote.name}
+        user_identity = {"id": external_id, "method": remote.name}
 
         # link User with UserIdentity
         oauth_link_external_id(user, user_identity)
@@ -72,8 +72,10 @@ def cern_info_serializer(remote, resp, token_user_info, user_info):
     """Info serializer."""
     user_info = user_info or {}
 
+    username = token_user_info["sub"]
     email = token_user_info["email"]
-    external_id = token_user_info["cern_person_id"]
+    # cern_person_id might be missing for non-CERN users (EduGain)
+    external_id = token_user_info.get("cern_person_id", username)
     preferred_language = user_info.get("cern_preferred_language", "en").lower()
     return {
         "user": {
@@ -82,7 +84,7 @@ def cern_info_serializer(remote, resp, token_user_info, user_info):
             "profile": {
                 "affiliations": user_info.get("home_institute", ""),
                 "full_name": user_info["name"],
-                "username": token_user_info["sub"],
+                "username": username,
             },
             "prefs": {
                 "visibility": "public",
@@ -97,7 +99,6 @@ def cern_info_serializer(remote, resp, token_user_info, user_info):
 
 ######################################################################################
 # Groups handler
-
 
 def cern_groups_handler(remote, resp):
     """Retrieves groups from remote account.
