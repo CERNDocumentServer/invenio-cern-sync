@@ -21,15 +21,8 @@ def first_or_default(d, key, default=""):
         return default
 
 
-def _is_different(dict1, dict2):
-    """Return true if they differ."""
-    return (
-        len(
-            [
-                key
-                for key in dict1.keys() | dict2.keys()
-                if dict1.get(key) != dict2.get(key)
-            ]
-        )
-        > 0
-    )
+def is_different(new_dict, existing_dict):
+    """Return True new_dict has new keys or updated values."""
+    for key, value in new_dict.items():
+        if key not in existing_dict or existing_dict[key] != value:
+            return True

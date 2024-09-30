@@ -14,16 +14,16 @@ def userprofile_mapper(cern_identity):
     The returned dict structure must match the user profile schema defined via
     the config ACCOUNTS_USER_PROFILE_SCHEMA."""
     return dict(
-        affiliations=cern_identity["instituteName"],
-        cern_department=cern_identity["cernDepartment"],
-        cern_group=cern_identity["cernGroup"],
-        cern_section=cern_identity["cernSection"],
+        affiliations=cern_identity["instituteName"] or "",
+        department=cern_identity["cernDepartment"] or "",
         family_name=cern_identity["lastName"],
         full_name=cern_identity["displayName"],
         given_name=cern_identity["firstName"],
-        mailbox=cern_identity.get("postOfficeBox", ""),
-        orcid=cern_identity.get("orcid", ""),
+        group=cern_identity["cernGroup"] or "",
+        mailbox=cern_identity["postOfficeBox"] or "",
+        orcid=cern_identity["orcid"] or "",
         person_id=cern_identity["personId"],
+        section=cern_identity["cernSection"] or "",
     )
 
 

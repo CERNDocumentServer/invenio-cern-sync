@@ -80,8 +80,8 @@ IDENTITY_FIELDS = [
     "instituteName",  # "CERN"
     "preferredCernLanguage",  # "EN"
     "orcid",
+    "postOfficeBox",
     "primaryAccountEmail",
-    # "postOfficeBox",  # currently missing, maybe added later
 ]
 
 
@@ -111,7 +111,8 @@ class AuthZService:
         _url = f"{url}&offset={offset}"
         resp = request_with_retries(url=_url, method="GET", headers=headers)
         total = resp.json()["pagination"]["total"]
-        yield resp.json()["data"]
+        total = 500  # for testing purposes
+        yield from resp.json()["data"]
         offset += self.limit
 
         max_threads = os.cpu_count()
@@ -122,14 +123,14 @@ class AuthZService:
                 _url = f"{url}&offset={offset}"
                 futures.append(
                     executor.submit(
-                        request_with_retries(url=_url, method="GET", headers=headers)
+                        request_with_retries, url=_url, method="GET", headers=headers
                     )
                 )
                 offset += self.limit
 
             for future in concurrent.futures.as_completed(futures):
                 resp = future.result()
-                yield resp.json()["data"]
+                yield from resp.json()["data"]
 
     def get_identities(self, fields=IDENTITY_FIELDS):
         """Get all identities.
@@ -144,13 +145,13 @@ class AuthZService:
             "accept": "application/json",
         }
 
-        query_params = [("field", value) for value in fields]
-        query_params += [
+        query_params = [
             ("limit", self.limit),
             ("filter", "type:Person"),
             ("filter", "source:cern"),
             ("filter", "activeUser:true"),
         ]
+        query_params += [("field", value) for value in fields]
         query_string = urlencode(query_params)
 
         url_without_offset = f"{self.base_url}/api/v1.0/Identity?{query_string}"
@@ -164,11 +165,11 @@ class AuthZService:
             "accept": "application/json",
         }
 
-        query_params = [("field", value) for value in fields]
-        query_params += [
+        query_params = [
             ("limit", self.limit),
         ]
+        query_params += [("field", value) for value in fields]
         query_string = urlencode(query_params)
 
-        url_without_offset = f"{self.base_url}/api/v1.0/Groups?{query_string}"
+        url_without_offset = f"{self.base_url}/api/v1.0/Group?{query_string}"
         return self._fetch_all(url_without_offset, headers)

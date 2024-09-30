@@ -29,13 +29,13 @@ def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=No
         raise InvalidLdapUser("employeeID", "unknown")
 
     try:
+        # first_or_default(ldap_user, "preferredLanguage", "en").lower()
+        language = "en"  # Invenio supports only English for now
         serialized = dict(
             email=first_or_raise(ldap_user, "mail").lower(),
             username=first_or_raise(ldap_user, "cn").lower(),
             user_profile=userprofile_mapper(ldap_user),
-            preferences=dict(
-                locale=first_or_default(ldap_user, "preferredLanguage", "en").lower()
-            ),
+            preferences=dict(locale=language),
             user_identity_id=person_id,
             remote_account_extra_data=extra_data_mapper(ldap_user),
         )

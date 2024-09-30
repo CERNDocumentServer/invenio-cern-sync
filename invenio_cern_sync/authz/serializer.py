@@ -24,11 +24,13 @@ def serialize_cern_identity(cern_identity):
         raise InvalidCERNIdentity("personId", "unknown")
 
     try:
+        # cern_identity.get("preferredCernLanguage") or "en"  # value can be None
+        language = "en"  # Invenio supports only English for now
         serialized = dict(
             email=cern_identity["primaryAccountEmail"].lower(),
             username=cern_identity["upn"].lower(),
             user_profile=userprofile_mapper(cern_identity),
-            preferences=dict(locale=cern_identity["preferredCernLanguage"].lower()),
+            preferences=dict(locale=language.lower()),
             user_identity_id=person_id,
             remote_account_extra_data=extra_data_mapper(cern_identity),
         )

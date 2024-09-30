@@ -14,7 +14,7 @@ from invenio_db import db
 from invenio_oauthclient.models import RemoteAccount, UserIdentity
 
 from invenio_cern_sync.sso import cern_remote_app_name
-from invenio_cern_sync.utils import _is_different
+from invenio_cern_sync.utils import is_different
 
 
 def _create_user(cern_user):
@@ -88,25 +88,25 @@ def create_user(cern_user, auto_confirm=True):
 
 def _update_user(user, cern_user):
     """Update User table, when necessary."""
-    user_changed = (
+    user_updated = (
         user.email != cern_user["email"]
         or user.username != cern_user["username"].lower()
     )
-    if user_changed:
+    if user_updated:
         user.email = cern_user["email"]
         user.username = cern_user["username"]
 
     # check if any key/value in CERN is different from the local user.user_profile
     local_up = user.user_profile
     cern_up = cern_user["user_profile"]
-    up_changed = _is_different(cern_up, local_up)
-    if up_changed:
+    up_updated = is_different(cern_up, local_up)
+    if up_updated:
         user.user_profile = {**dict(user.user_profile), **cern_up}
 
     # check if any key/value in CERN is different from the local user.preferences
     local_prefs = user.preferences
     cern_prefs = cern_user["preferences"]
-    prefs_changed = (
+    prefs_updated = (
         len(
             [
                 key
@@ -116,23 +116,28 @@ def _update_user(user, cern_user):
         )
         > 0
     )
-    if prefs_changed:
+    if prefs_updated:
         user.preferences = {**dict(user.preferences), **cern_prefs}
+
+    return user_updated or up_updated or prefs_updated
 
 
 def _update_useridentity(user_id, user_identity, cern_user):
     """Update User profile col, when necessary."""
-    changed = (
+    updated = (
         user_identity.id != cern_user["user_identity_id"]
         or user_identity.id_user != user_id
     )
-    if changed:
+    if updated:
         user_identity.id = cern_user["user_identity_id"]
         user_identity.id_user = user_id
+
+    return updated
 
 
 def _update_remote_account(user, cern_user):
     """Update RemoteAccount table."""
+    updated = False
     extra_data = cern_user["remote_account_extra_data"]
     client_id = current_app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
     assert client_id
@@ -141,12 +146,19 @@ def _update_remote_account(user, cern_user):
     if not remote_account:
         # should probably never happen
         RemoteAccount.create(user.id, client_id, extra_data)
-    elif _is_different(remote_account.extra_data, extra_data):
+        updated = True
+    elif is_different(extra_data, remote_account.extra_data):
         remote_account.extra_data.update(**extra_data)
+        updated = True
+
+    return updated
 
 
 def update_existing_user(local_user, local_user_identity, cern_user):
     """Update all user tables, when necessary."""
-    _update_user(local_user, cern_user)
-    _update_useridentity(local_user.id, local_user_identity, cern_user)
-    _update_remote_account(local_user, cern_user)
+    user_updated = _update_user(local_user, cern_user)
+    identity_updated = _update_useridentity(
+        local_user.id, local_user_identity, cern_user
+    )
+    remote_updated = _update_remote_account(local_user, cern_user)
+    return user_updated or identity_updated or remote_updated

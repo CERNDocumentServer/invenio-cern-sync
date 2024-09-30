@@ -149,8 +149,8 @@ def _update_existing(users, serializer_fn, log_uuid):
                     user.id == user_identity.id_user
                 ), f"User and UserIdentity are not correctly linked for user #{user.id} and user_identity #{user_identity.id}"
 
-        update_existing_user(user, user_identity, invenio_user)
-        updated.add(user.id)
+        if update_existing_user(user, user_identity, invenio_user):
+            updated.add(user.id)
 
     # persist changes before starting with the inserting of missing users
     db.session.commit()

@@ -17,14 +17,14 @@ def userprofile_mapper(ldap_user):
     the config ACCOUNTS_USER_PROFILE_SCHEMA."""
     return dict(
         affiliations=first_or_default(ldap_user, "cernInstituteName"),
-        cern_department=first_or_default(ldap_user, "division"),
-        cern_group=first_or_default(ldap_user, "cernGroup"),
-        cern_section=first_or_default(ldap_user, "cernSection"),
+        department=first_or_default(ldap_user, "division"),
         family_name=first_or_default(ldap_user, "sn"),
         full_name=first_or_default(ldap_user, "displayName"),
         given_name=first_or_default(ldap_user, "givenName"),
+        group=first_or_default(ldap_user, "cernGroup"),
         mailbox=first_or_default(ldap_user, "postOfficeBox"),
         person_id=first_or_default(ldap_user, "employeeID"),
+        section=first_or_default(ldap_user, "cernSection"),
     )
 
 

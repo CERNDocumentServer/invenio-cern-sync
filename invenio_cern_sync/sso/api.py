@@ -35,6 +35,7 @@ def confirm_registration_form(*args, **kwargs):
 ######################################################################################
 # User handler
 
+
 def cern_setup_handler(remote, token, resp):
     """Perform additional setup after the user has been logged in."""
     token_user_info, _ = get_user_info(remote, resp)
@@ -99,6 +100,7 @@ def cern_info_serializer(remote, resp, token_user_info, user_info):
 
 ######################################################################################
 # Groups handler
+
 
 def cern_groups_handler(remote, resp):
     """Retrieves groups from remote account.
