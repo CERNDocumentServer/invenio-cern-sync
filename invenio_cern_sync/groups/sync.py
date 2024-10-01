@@ -41,7 +41,13 @@ def sync(**kwargs):
     overridden_params = kwargs.get("groups", dict())
     groups = authz_client.get_groups(**overridden_params)
 
+    log_info(log_uuid, "creating-updating-groups", dict(status="started"))
     roles_ids = create_or_update_roles(_serialize_groups(groups))
+    log_info(
+        log_uuid,
+        "creating-updating-groups",
+        dict(status="completed", count=len(roles_ids)),
+    )
 
     total_time = time.time() - start_time
     log_info(log_uuid, "groups_sync", dict(status="completed", time=total_time))

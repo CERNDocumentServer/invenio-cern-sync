@@ -10,6 +10,7 @@
 import concurrent.futures
 import os
 import time
+from datetime import datetime
 from urllib.parse import urlencode
 
 import requests
@@ -111,7 +112,6 @@ class AuthZService:
         _url = f"{url}&offset={offset}"
         resp = request_with_retries(url=_url, method="GET", headers=headers)
         total = resp.json()["pagination"]["total"]
-        total = 500  # for testing purposes
         yield from resp.json()["data"]
         offset += self.limit
 
@@ -132,13 +132,20 @@ class AuthZService:
                 resp = future.result()
                 yield from resp.json()["data"]
 
-    def get_identities(self, fields=IDENTITY_FIELDS):
+    def get_identities(self, fields=IDENTITY_FIELDS, since=None):
         """Get all identities.
 
         It will retrieve all user identities (type:Person), with a primary account
         (source:cern) and actively at CERN (activeUser:true).
         If you need to also get externals with EduGain account, you need to use
-        source:edugain and omit the activeUser filter, as external don't have this."""
+        source:edugain and omit the activeUser filter, as external don't have this.
+
+        :param fields (list): List of fields to include in the response.
+            Defaults to IDENTITY_FIELDS.
+        :param since (string, YYYY-MM-DD, optional): If provided, filters identities
+            modified since this date (includes the ones created since this date).
+        :return list: A list of user identities matching the criteria.
+        """
         token = self.keycloak_service.get_authz_token()
         headers = {
             "Authorization": f"Bearer {token}",
@@ -152,13 +159,23 @@ class AuthZService:
             ("filter", "activeUser:true"),
         ]
         query_params += [("field", value) for value in fields]
+        if since:
+            assert datetime.strptime(since, "%Y-%m-%d")
+            query_params.append(("filter", f"modificationTime:gt:{since}T00:00:00Z"))
         query_string = urlencode(query_params)
 
         url_without_offset = f"{self.base_url}/api/v1.0/Identity?{query_string}"
         return self._fetch_all(url_without_offset, headers)
 
-    def get_groups(self, fields=GROUPS_FIELDS):
-        """Get all groups."""
+    def get_groups(self, fields=GROUPS_FIELDS, since=None):
+        """Get all groups.
+
+        :param fields (list): List of fields to include in the response.
+            Defaults to GROUPS_FIELDS.
+        :param since (string, YYYY-MM-DD, optional): If provided, filters groups
+            modified since this date (includes the ones created since this date).
+        :return list: A list of groups matching the criteria.
+        """
         token = self.keycloak_service.get_authz_token()
         headers = {
             "Authorization": f"Bearer {token}",
@@ -169,6 +186,9 @@ class AuthZService:
             ("limit", self.limit),
         ]
         query_params += [("field", value) for value in fields]
+        if since:
+            assert datetime.strptime(since, "%Y-%m-%d")
+            query_params.append(("filter", f"modificationTime:gt:{since}T00:00:00Z"))
         query_string = urlencode(query_params)
 
         url_without_offset = f"{self.base_url}/api/v1.0/Group?{query_string}"
