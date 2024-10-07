@@ -142,7 +142,7 @@ class AuthZService:
 
         :param fields (list): List of fields to include in the response.
             Defaults to IDENTITY_FIELDS.
-        :param since (string, YYYY-MM-DD, optional): If provided, filters identities
+        :param since (string, ISO format, optional): If provided, filters identities
             modified since this date (includes the ones created since this date).
         :return list: A list of user identities matching the criteria.
         """
@@ -160,8 +160,9 @@ class AuthZService:
         ]
         query_params += [("field", value) for value in fields]
         if since:
-            assert datetime.strptime(since, "%Y-%m-%d")
-            query_params.append(("filter", f"modificationTime:gt:{since}T00:00:00Z"))
+            dt = datetime.fromisoformat(since)
+            ymd = dt.strftime("%Y-%m-%d")
+            query_params.append(("filter", f"modificationTime:gt:{ymd}T00:00:00Z"))
         query_string = urlencode(query_params)
 
         url_without_offset = f"{self.base_url}/api/v1.0/Identity?{query_string}"
@@ -172,7 +173,7 @@ class AuthZService:
 
         :param fields (list): List of fields to include in the response.
             Defaults to GROUPS_FIELDS.
-        :param since (string, YYYY-MM-DD, optional): If provided, filters groups
+        :param since (string, ISO format, optional): If provided, filters groups
             modified since this date (includes the ones created since this date).
         :return list: A list of groups matching the criteria.
         """
@@ -187,8 +188,9 @@ class AuthZService:
         ]
         query_params += [("field", value) for value in fields]
         if since:
-            assert datetime.strptime(since, "%Y-%m-%d")
-            query_params.append(("filter", f"modificationTime:gt:{since}T00:00:00Z"))
+            dt = datetime.fromisoformat(since)
+            ymd = dt.strftime("%Y-%m-%d")
+            query_params.append(("filter", f"modificationTime:gt:{ymd}T00:00:00Z"))
         query_string = urlencode(query_params)
 
         url_without_offset = f"{self.base_url}/api/v1.0/Group?{query_string}"
