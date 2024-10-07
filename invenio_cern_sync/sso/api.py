@@ -10,7 +10,7 @@
 from flask import current_app, g
 from invenio_db import db
 from invenio_oauthclient import current_oauthclient, oauth_link_external_id
-from invenio_oauthclient.contrib.keycloak.handlers import get_user_info
+from invenio_oauthclient.contrib.keycloak.helpers import get_user_info
 from invenio_userprofiles.forms import confirm_register_form_preferences_factory
 from werkzeug.local import LocalProxy
 
