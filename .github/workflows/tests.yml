@@ -42,7 +42,7 @@ jobs:
     env:
       DB: ${{ matrix.db-service }}
       SEARCH: ${{ matrix.search-service }}
-      EXTRAS: tests,${{ matrix.search-service }}
+      EXTRAS: tests,ldap,${{ matrix.search-service }}
 
     steps:
       - name: Install python-ldap dependencies

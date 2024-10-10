@@ -36,7 +36,7 @@ def remoteaccount_extradata_mapper(ldap_user):
         RemoteAccount.extra_data column. Any unwanted key should be removed.
     """
     return dict(
-        person_id=first_or_raise(ldap_user, "employeeID"),
+        identity_id=first_or_default(ldap_user, "employeeID"),
         uidNumber=first_or_raise(ldap_user, "uidNumber"),
         username=first_or_raise(ldap_user, "cn").lower(),
     )

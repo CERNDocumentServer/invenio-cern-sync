@@ -67,6 +67,7 @@ def cern_identities():
                 "cernGroup": "CA",
                 "cernSection": "IR",
                 "instituteName": "CERN",
+                "postOfficeBox": f"M31120{i}",
                 "preferredCernLanguage": "EN",
                 "orcid": f"0000-0002-2227-122{i}",
                 "primaryAccountEmail": f"john.doe{i}@cern.ch",
