@@ -43,15 +43,15 @@ def cern_setup_handler(remote, token, resp):
     with db.session.begin_nested():
         username = token_user_info["sub"]
         # cern_person_id is not set for non-CERN users (EduGain)
-        external_id = token_user_info.get("cern_person_id", username)
+        identity_id = token_user_info.get("cern_person_id") or username
         extra_data = {
             "keycloak_id": username,
-            "person_id": external_id,
+            "identity_id": identity_id,
         }
         token.remote_account.extra_data = extra_data
 
         user = token.remote_account.user
-        user_identity = {"id": external_id, "method": remote.name}
+        user_identity = {"id": identity_id, "method": remote.name}
 
         # link User with UserIdentity
         oauth_link_external_id(user, user_identity)
@@ -76,7 +76,7 @@ def cern_info_serializer(remote, resp, token_user_info, user_info):
     username = token_user_info["sub"]
     email = token_user_info["email"]
     # cern_person_id might be missing for non-CERN users (EduGain)
-    external_id = token_user_info.get("cern_person_id", username)
+    identity_id = token_user_info.get("cern_person_id") or username
     preferred_language = user_info.get("cern_preferred_language", "en").lower()
     return {
         "user": {
@@ -93,7 +93,7 @@ def cern_info_serializer(remote, resp, token_user_info, user_info):
                 "locale": preferred_language,
             },
         },
-        "external_id": external_id,
+        "external_id": identity_id,
         "external_method": remote.name,
     }
 

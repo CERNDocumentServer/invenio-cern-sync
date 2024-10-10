@@ -42,7 +42,7 @@ def test_serialize(app, cern_identities):
         assert serialized_identities[i]["preferences"] == {"locale": "en"}
         assert serialized_identities[i]["user_identity_id"] == f"1234{i}"
         assert serialized_identities[i]["remote_account_extra_data"] == {
-            "person_id": f"1234{i}",
+            "identity_id": f"1234{i}",
             "uidNumber": 22222 + i,
             "username": f"jdoe{i}",
         }

@@ -35,7 +35,7 @@ def remoteaccount_extradata_mapper(cern_identity):
         RemoteAccount.extra_data column. Any unwanted key should be removed.
     """
     return dict(
-        person_id=cern_identity["personId"],
+        identity_id=cern_identity.get("personId") or "",
         uidNumber=cern_identity["uid"],
         username=cern_identity["upn"].lower(),
     )

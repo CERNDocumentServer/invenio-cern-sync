@@ -37,7 +37,7 @@ def test_serialize_ldap_users(app, ldap_users):
     assert profile["person_id"] == "12340"
 
     extra_data = first_user["remote_account_extra_data"]
-    assert extra_data["person_id"] == "12340"
+    assert extra_data["identity_id"] == "12340"
     assert extra_data["uidNumber"] == "222220"
     assert extra_data["username"] == "jdoe0"
 
@@ -131,6 +131,6 @@ def test_serialize_ldap_users_missing_optional_fields(app):
     assert profile["cern_section"] == ""
 
     extra_data = first_user["remote_account_extra_data"]
-    assert extra_data["person_id"] == "12340"
+    assert extra_data["identity_id"] == "12340"
     assert extra_data["uidNumber"] == "222220"
     assert extra_data["username"] == "jdoe0"

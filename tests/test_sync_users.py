@@ -72,7 +72,7 @@ def _assert_cern_identity(expected_identity, client_id):
     assert user_identity.id_user == user.id
     assert user_identity.method == cern_remote_app_name
     # assert remote account data
-    assert remote_account.extra_data["person_id"] == expected_identity["personId"]
+    assert remote_account.extra_data["identity_id"] == expected_identity["personId"]
     assert remote_account.extra_data["uidNumber"] == expected_identity["uid"]
     assert remote_account.extra_data["username"] == expected_identity["upn"]
 
@@ -241,7 +241,7 @@ def test_sync_person_id_change(
     assert ra_change["previous_person_id"] == previous_person_id
     assert ra_change["new_person_id"] == first["personId"]
 
-    expected_log_msg = f"Person Id changed for User `{user.username}` `{user.email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Person Id from CERN DB: `{first['personId']}`."
+    expected_log_msg = f"Identity Id changed for User `{user.username}` `{user.email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Identity Id from CERN DB: `{first['personId']}`."
     mock_log_warning.assert_any_call(
         mock.ANY,
         "updating_existing_users",

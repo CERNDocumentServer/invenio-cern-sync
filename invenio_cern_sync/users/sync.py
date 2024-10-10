@@ -26,14 +26,14 @@ def _log_user_data_changed(
     log_uuid,
     log_action,
     ra_extra_data,
-    person_id,
+    identity_id,
     previous_username,
     previous_email,
     new_username,
     new_email,
 ):
     """Log a warning about username/e-mail change."""
-    log_msg = f"Username/e-mail changed for UserIdentity.id #{person_id}. Local DB username/e-mail: `{previous_username}` `{previous_email}`. New from CERN DB: `{new_username}` `{new_email}`."
+    log_msg = f"Username/e-mail changed for UserIdentity.id #{identity_id}. Local DB username/e-mail: `{previous_username}` `{previous_email}`. New from CERN DB: `{new_username}` `{new_email}`."
     log_warning(log_uuid, log_action, dict(msg=log_msg))
 
     # record this change in the RemoteAccount.extra_data
@@ -50,26 +50,26 @@ def _log_user_data_changed(
     return ra_extra_data
 
 
-def _log_person_id_changed(
+def _log_identity_id_changed(
     log_uuid,
     log_action,
     ra_extra_data,
     username,
     email,
-    previous_person_id,
-    new_person_id,
+    previous_identity_id,
+    new_identity_id,
 ):
-    """Log a warning about Person Id change."""
-    log_msg = f"Person Id changed for User `{username}` `{email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Person Id from CERN DB: `{new_person_id}`."
+    """Log a warning about Identity Id change."""
+    log_msg = f"Identity Id changed for User `{username}` `{email}`. Previous UserIdentity.id in the local DB: `{previous_identity_id}` - New Identity Id from CERN DB: `{new_identity_id}`."
     log_warning(log_uuid, log_action, dict(msg=log_msg))
 
     # record this change in the RemoteAccount.extra_data
     ra_extra_data.append(
         dict(
             datetime=datetime.now().isoformat(),
-            action="personId_changed",
-            previous_person_id=previous_person_id,
-            new_person_id=new_person_id,
+            action="identityId_changed",
+            previous_identity_id=previous_identity_id,
+            new_identity_id=new_identity_id,
         )
     )
     return ra_extra_data
@@ -85,7 +85,7 @@ def _update_existing(users, serializer_fn, log_uuid):
     for invenio_user in serializer_fn(users):
         user = user_identity = None
 
-        # Fetch the local user by `person_id`, the CERN unique id
+        # Fetch the local user by `identity_id`, the CERN unique id
         user_identity = UserIdentity.query.filter_by(
             id=invenio_user["user_identity_id"]
         ).one_or_none()
@@ -97,16 +97,16 @@ def _update_existing(users, serializer_fn, log_uuid):
         if is_missing:
             # The user does not exist in the DB.
             # The creation of new users is done after all updates completed,
-            # to avoid conflicts in case other `person_id` have changed.
+            # to avoid conflicts in case other `identity_id` have changed.
             missing.append(invenio_user)
             continue
         else:
-            # We start checking first if we found the user by `person_id`
-            # The assumption is that `person_id` and `e-mail/username` cannot both
+            # We start checking first if we found the user by `identity_id`
+            # The assumption is that `identity_id` and `e-mail/username` cannot both
             # have changed since the previous sync.
             if user_identity and (not user or user.id != user_identity.id_user):
                 # The `e-mail/username` changed.
-                # The User `e-mail/username` referenced by this `person_id`
+                # The User `e-mail/username` referenced by this `identity_id`
                 # will have to be updated.
                 user = user_identity.user
                 _ra_extra_data = invenio_user["remote_account_extra_data"].get(
@@ -116,7 +116,7 @@ def _update_existing(users, serializer_fn, log_uuid):
                     log_uuid,
                     log_action,
                     ra_extra_data=_ra_extra_data,
-                    person_id=invenio_user["user_identity_id"],
+                    identity_id=invenio_user["user_identity_id"],
                     previous_username=user.username,
                     previous_email=user.email,
                     new_username=invenio_user["username"],
@@ -124,26 +124,26 @@ def _update_existing(users, serializer_fn, log_uuid):
                 )
                 invenio_user["remote_account_extra_data"]["changes"] = ra_extra_data
             elif user and (not user_identity or user_identity.id_user != user.id):
-                # The `person_id` changed.
-                # The `person_id` of the UserIdentity associated to the User
+                # The `identity_id` changed.
+                # The `identity_id` of the UserIdentity associated to the User
                 # will have to be updated.
                 user_identity = UserIdentity.query.filter_by(id_user=user.id).one()
 
                 _ra_extra_data = invenio_user["remote_account_extra_data"].get(
                     "changes", []
                 )
-                ra_extra_data = _log_person_id_changed(
+                ra_extra_data = _log_identity_id_changed(
                     log_uuid,
                     log_action,
                     ra_extra_data=_ra_extra_data,
                     username=invenio_user["username"],
                     email=invenio_user["email"],
-                    previous_person_id=user_identity.id,
-                    new_person_id=invenio_user["user_identity_id"],
+                    previous_identity_id=user_identity.id,
+                    new_identity_id=invenio_user["user_identity_id"],
                 )
                 invenio_user["remote_account_extra_data"]["changes"] = ra_extra_data
             else:
-                # Both found, make sure that the `person_id` and the `e-mail/username`
+                # Both found, make sure that the `identity_id` and the `e-mail/username`
                 # are associated to the same user.
                 assert (
                     user.id == user_identity.id_user
