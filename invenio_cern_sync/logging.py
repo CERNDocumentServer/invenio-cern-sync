@@ -8,27 +8,34 @@
 """Invenio-CERN-sync logging."""
 
 import json
+import uuid
 
 from flask import current_app
 
 
-def _log(log_func, log_uuid, action, extra=dict()):
+def _log(log_func, name, extra=dict(), log_uuid=None):
     """Format log."""
-    structured_msg = dict(name="sync_users", uuid=log_uuid, action=action, **extra)
+    uuid_ = log_uuid or str(uuid.uuid4())
+    structured_msg = dict(name=name, uuid=uuid_, **extra)
     msg = json.dumps(structured_msg, sort_keys=True)
     log_func(msg)
 
 
-def log_info(log_uuid, action, extra=dict()):
+def log_debug(name, extra=dict(), log_uuid=None):
+    """Log debug."""
+    _log(current_app.logger.debug, name, extra=extra, log_uuid=log_uuid)
+
+
+def log_info(name, extra=dict(), log_uuid=None):
     """Log info."""
-    _log(current_app.logger.info, log_uuid, action, extra)
+    _log(current_app.logger.info, name, extra=extra, log_uuid=log_uuid)
 
 
-def log_warning(log_uuid, action, extra=dict()):
+def log_warning(name, extra=dict(), log_uuid=None):
     """Log warning."""
-    _log(current_app.logger.warning, log_uuid, action, extra)
+    _log(current_app.logger.warning, name, extra=extra, log_uuid=log_uuid)
 
 
-def log_error(log_uuid, action, extra=dict()):
+def log_error(name, extra=dict(), log_uuid=None):
     """Log error."""
-    _log(current_app.logger.error, log_uuid, action, extra)
+    _log(current_app.logger.error, name, extra=extra, log_uuid=log_uuid)

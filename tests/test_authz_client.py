@@ -100,7 +100,7 @@ def test_get_identities(
     authz_service = AuthZService(mock_keycloak_service, limit=1)
     identities = list(authz_service.get_identities())
     assert len(identities) == 1
-    assert identities[0][0]["upn"] == "jdoe"
+    assert identities[0]["upn"] == "jdoe"
     mock_request_with_retries.assert_called()
 
 
@@ -125,7 +125,7 @@ def test_get_groups(
     groups = list(authz_service.get_groups())
 
     assert len(groups) == 1
-    assert groups[0][0]["groupIdentifier"] == "authorization-service-administrators"
+    assert groups[0]["groupIdentifier"] == "authorization-service-administrators"
     mock_request_with_retries.assert_called()
 
 
@@ -180,7 +180,7 @@ def test_get_identities_empty(
     authz_service = AuthZService(mock_keycloak_service, limit=1)
     identities = list(authz_service.get_identities())
 
-    assert len(identities[0]) == 0
+    assert len(identities) == 0
     mock_request_with_retries.assert_called()
 
 
@@ -198,5 +198,5 @@ def test_get_groups_empty(
     authz_service = AuthZService(mock_keycloak_service, limit=1)
     groups = list(authz_service.get_groups())
 
-    assert len(groups[0]) == 0
+    assert len(groups) == 0
     mock_request_with_retries.assert_called()

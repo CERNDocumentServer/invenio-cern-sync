@@ -29,7 +29,12 @@ def _serialize_groups(groups):
 def sync(**kwargs):
     """Sync CERN groups with local db."""
     log_uuid = str(uuid.uuid4())
-    log_info(log_uuid, "groups_sync", dict(status="fetching-cern-groups"))
+    log_name = "groups-sync"
+    log_info(
+        log_name,
+        dict(action="fetching-cern-groups", status="started"),
+        log_uuid=log_uuid,
+    )
     start_time = time.time()
 
     overridden_params = kwargs.get("keycloak_service", dict())
@@ -41,15 +46,26 @@ def sync(**kwargs):
     overridden_params = kwargs.get("groups", dict())
     groups = authz_client.get_groups(**overridden_params)
 
-    log_info(log_uuid, "creating-updating-groups", dict(status="started"))
+    log_info(
+        log_name,
+        dict(action="fetching-cern-groups", status="completed"),
+        log_uuid=log_uuid,
+    )
+    log_info(
+        log_name,
+        dict(action="creating-updating-groups", status="started"),
+        log_uuid=log_uuid,
+    )
     roles_ids = create_or_update_roles(_serialize_groups(groups))
     log_info(
-        log_uuid,
-        "creating-updating-groups",
-        dict(status="completed", count=len(roles_ids)),
+        log_name,
+        dict(
+            action="creating-updating-groups", status="completed", count=len(roles_ids)
+        ),
+        log_uuid=log_uuid,
     )
 
     total_time = time.time() - start_time
-    log_info(log_uuid, "groups_sync", dict(status="completed", time=total_time))
+    log_info(log_name, dict(status="completed", time=total_time), log_uuid=log_uuid)
 
     return list(roles_ids)

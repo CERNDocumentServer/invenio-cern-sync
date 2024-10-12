@@ -7,7 +7,10 @@
 
 """Invenio-CERN-sync LDAP Client."""
 
-import ldap
+try:
+    import ldap
+except ImportError:
+    ldap = None
 from flask import current_app
 
 BASE = "OU=Users,OU=Organic Units,DC=cern,DC=ch"

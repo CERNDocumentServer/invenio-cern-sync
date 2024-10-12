@@ -20,31 +20,43 @@ from invenio_cern_sync.utils import first_or_default, first_or_raise
 
 def _assert_log_called(mock_log_info):
     """Assert log called."""
-    expected_log_uuid = mock_log_info.call_args.args[0]
+    expected_log_uuid = mock_log_info.call_args.kwargs["log_uuid"]
 
     mock_log_info.assert_any_call(
-        expected_log_uuid,
-        "users_sync",
-        dict(status="fetching-cern-users", method=mock.ANY),
+        "users-sync",
+        dict(action="fetching-cern-users", status="started", method=mock.ANY),
+        log_uuid=expected_log_uuid,
     )
     mock_log_info.assert_any_call(
-        expected_log_uuid, "updating_existing_users", dict(status="started")
+        "users-sync",
+        dict(action="updating-existing-users", status="started"),
+        log_uuid=expected_log_uuid,
     )
     mock_log_info.assert_any_call(
-        expected_log_uuid,
-        "updating_existing_users",
-        dict(status="completed", updated_count=mock.ANY),
+        "users-sync",
+        dict(
+            action="updating-existing-users", status="completed", updated_count=mock.ANY
+        ),
+        log_uuid=expected_log_uuid,
     )
     mock_log_info.assert_any_call(
-        expected_log_uuid, "inserting_missing_users", dict(status="started")
+        "users-sync",
+        dict(action="inserting-missing-users", status="started"),
+        log_uuid=expected_log_uuid,
     )
     mock_log_info.assert_any_call(
-        expected_log_uuid,
-        "inserting_missing_users",
-        dict(status="completed", inserted_count=mock.ANY),
+        "users-sync",
+        dict(
+            action="inserting-missing-users",
+            status="completed",
+            inserted_count=mock.ANY,
+        ),
+        log_uuid=expected_log_uuid,
     )
     mock_log_info.assert_any_call(
-        expected_log_uuid, "users_sync", dict(status="completed", time=mock.ANY)
+        "users-sync",
+        dict(status="completed", time=mock.ANY),
+        log_uuid=expected_log_uuid,
     )
 
 
@@ -57,10 +69,10 @@ def _assert_cern_identity(expected_identity, client_id):
     assert user.username == expected_identity["upn"]
     assert user.email == expected_identity["primaryAccountEmail"]
     profile = user.user_profile
-    assert profile["affiliations"] == expected_identity["affiliations"]
-    assert profile["cern_department"] == expected_identity["cernDepartment"]
-    assert profile["cern_group"] == expected_identity["cernGroup"]
-    assert profile["cern_section"] == expected_identity["cernSection"]
+    assert profile["affiliations"] == expected_identity["instituteName"]
+    assert profile["department"] == expected_identity["cernDepartment"]
+    assert profile["group"] == expected_identity["cernGroup"]
+    assert profile["section"] == expected_identity["cernSection"]
     assert profile["family_name"] == expected_identity["lastName"]
     assert profile["full_name"] == expected_identity["displayName"]
     assert profile["given_name"] == expected_identity["firstName"]
@@ -119,12 +131,12 @@ def test_sync_ldap(mock_log_info, MockLdapClient, app, ldap_users):
         assert user.username == first_or_raise(ldap_user, "cn").lower()
         assert user.email == email.lower()
         profile = user.user_profile
-        assert profile["affiliations"] == [
-            first_or_default(ldap_user, "cernInstituteName")
-        ]
-        assert profile["cern_department"] == first_or_default(ldap_user, "division")
-        assert profile["cern_group"] == first_or_default(ldap_user, "cernGroup")
-        assert profile["cern_section"] == first_or_default(ldap_user, "cernSection")
+        assert profile["affiliations"] == first_or_default(
+            ldap_user, "cernInstituteName"
+        )
+        assert profile["department"] == first_or_default(ldap_user, "division")
+        assert profile["group"] == first_or_default(ldap_user, "cernGroup")
+        assert profile["section"] == first_or_default(ldap_user, "cernSection")
         assert profile["family_name"] == first_or_default(ldap_user, "sn")
         assert profile["full_name"] == first_or_default(ldap_user, "displayName")
         assert profile["given_name"] == first_or_default(ldap_user, "givenName")
@@ -139,7 +151,7 @@ def test_sync_ldap(mock_log_info, MockLdapClient, app, ldap_users):
         assert user_identity.id_user == user.id
         assert user_identity.method == cern_remote_app_name
         # assert remote account data
-        assert remote_account.extra_data["person_id"] == first_or_raise(
+        assert remote_account.extra_data["identity_id"] == first_or_raise(
             ldap_user, "employeeID"
         )
         assert remote_account.extra_data["uidNumber"] == first_or_raise(
@@ -192,6 +204,7 @@ def test_sync_update_insert(
         "cernGroup": "TT",
         "cernSection": "EE",
         "instituteName": "CERN",
+        "postOfficeBox": "M31120",
         "instituteAbbreviation": "CERN",
         "preferredCernLanguage": "EN",
         "orcid": f"0000-0002-2227-8888",
@@ -237,15 +250,15 @@ def test_sync_person_id_change(
     assert user_identity.id == first["personId"]
     remote_account = RemoteAccount.get(user.id, client_id)
     ra_change = remote_account.extra_data["changes"][0]
-    assert ra_change["action"] == "personId_changed"
-    assert ra_change["previous_person_id"] == previous_person_id
-    assert ra_change["new_person_id"] == first["personId"]
+    assert ra_change["action"] == "identityId_changed"
+    assert ra_change["previous_identity_id"] == previous_person_id
+    assert ra_change["new_identity_id"] == first["personId"]
 
     expected_log_msg = f"Identity Id changed for User `{user.username}` `{user.email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Identity Id from CERN DB: `{first['personId']}`."
     mock_log_warning.assert_any_call(
-        mock.ANY,
-        "updating_existing_users",
-        dict(msg=expected_log_msg),
+        "users-sync",
+        dict(action="updating-existing-users", msg=expected_log_msg),
+        log_uuid=mock.ANY,
     ),
 
 
@@ -292,7 +305,7 @@ def test_sync_username_email_change(
 
     expected_log_msg = f"Username/e-mail changed for UserIdentity.id #{first['personId']}. Local DB username/e-mail: `{previous_username}` `{previous_email}`. New from CERN DB: `{first['upn']}` `{first['primaryAccountEmail']}`."
     mock_log_warning.assert_any_call(
-        mock.ANY,
-        "updating_existing_users",
-        dict(msg=expected_log_msg),
+        "users-sync",
+        dict(action="updating-existing-users", msg=expected_log_msg),
+        log_uuid=mock.ANY,
     ),

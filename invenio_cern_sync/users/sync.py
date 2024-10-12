@@ -24,6 +24,7 @@ from .api import create_user, update_existing_user
 
 def _log_user_data_changed(
     log_uuid,
+    log_name,
     log_action,
     ra_extra_data,
     identity_id,
@@ -34,7 +35,7 @@ def _log_user_data_changed(
 ):
     """Log a warning about username/e-mail change."""
     log_msg = f"Username/e-mail changed for UserIdentity.id #{identity_id}. Local DB username/e-mail: `{previous_username}` `{previous_email}`. New from CERN DB: `{new_username}` `{new_email}`."
-    log_warning(log_uuid, log_action, dict(msg=log_msg))
+    log_warning(log_name, dict(action=log_action, msg=log_msg), log_uuid=log_uuid)
 
     # record this change in the RemoteAccount.extra_data
     ra_extra_data.append(
@@ -52,6 +53,7 @@ def _log_user_data_changed(
 
 def _log_identity_id_changed(
     log_uuid,
+    log_name,
     log_action,
     ra_extra_data,
     username,
@@ -61,7 +63,7 @@ def _log_identity_id_changed(
 ):
     """Log a warning about Identity Id change."""
     log_msg = f"Identity Id changed for User `{username}` `{email}`. Previous UserIdentity.id in the local DB: `{previous_identity_id}` - New Identity Id from CERN DB: `{new_identity_id}`."
-    log_warning(log_uuid, log_action, dict(msg=log_msg))
+    log_warning(log_name, dict(action=log_action, msg=log_msg), log_uuid=log_uuid)
 
     # record this change in the RemoteAccount.extra_data
     ra_extra_data.append(
@@ -75,12 +77,12 @@ def _log_identity_id_changed(
     return ra_extra_data
 
 
-def _update_existing(users, serializer_fn, log_uuid):
+def _update_existing(users, serializer_fn, log_uuid, log_name):
     """Update existing users and return a list of missing users to insert."""
     missing = []
     updated = set()
-    log_action = "updating_existing_users"
-    log_info(log_uuid, log_action, dict(status="started"))
+    log_action = "updating-existing-users"
+    log_info(log_name, dict(action=log_action, status="started"), log_uuid=log_uuid)
 
     for invenio_user in serializer_fn(users):
         user = user_identity = None
@@ -114,6 +116,7 @@ def _update_existing(users, serializer_fn, log_uuid):
                 )
                 ra_extra_data = _log_user_data_changed(
                     log_uuid,
+                    log_name,
                     log_action,
                     ra_extra_data=_ra_extra_data,
                     identity_id=invenio_user["user_identity_id"],
@@ -134,6 +137,7 @@ def _update_existing(users, serializer_fn, log_uuid):
                 )
                 ra_extra_data = _log_identity_id_changed(
                     log_uuid,
+                    log_name,
                     log_action,
                     ra_extra_data=_ra_extra_data,
                     username=invenio_user["username"],
@@ -154,17 +158,18 @@ def _update_existing(users, serializer_fn, log_uuid):
 
     # persist changes before starting with the inserting of missing users
     db.session.commit()
-    log_info(log_uuid, log_action, dict(status="completed", updated_count=len(updated)))
+    log_info(
+        log_name,
+        dict(action=log_action, status="completed", updated_count=len(updated)),
+        log_uuid=log_uuid,
+    )
     return missing, updated
 
 
-def _insert_missing(invenio_users, log_uuid):
+def _insert_missing(invenio_users, log_uuid, log_name):
     """Insert users."""
-    log_info(
-        log_uuid,
-        "inserting_missing_users",
-        dict(status="started"),
-    )
+    log_action = "inserting-missing-users"
+    log_info(log_name, dict(action=log_action, status="started"), log_uuid=log_uuid)
 
     inserted = set()
     for invenio_user in invenio_users:
@@ -173,9 +178,9 @@ def _insert_missing(invenio_users, log_uuid):
 
     db.session.commit()
     log_info(
-        log_uuid,
-        "inserting_missing_users",
-        dict(status="completed", inserted_count=len(inserted)),
+        log_name,
+        dict(action=log_action, status="completed", inserted_count=len(inserted)),
+        log_uuid=log_uuid,
     )
     return inserted
 
@@ -188,7 +193,12 @@ def sync(method="AuthZ", **kwargs):
         )
 
     log_uuid = str(uuid.uuid4())
-    log_info(log_uuid, "users_sync", dict(status="fetching-cern-users", method=method))
+    log_name = "users-sync"
+    log_info(
+        log_name,
+        dict(action="fetching-cern-users", status="started", method=method),
+        log_uuid=log_uuid,
+    )
     start_time = time.time()
 
     if method == "AuthZ":
@@ -212,11 +222,11 @@ def sync(method="AuthZ", **kwargs):
         )
 
     missing_invenio_users, updated_ids = _update_existing(
-        users, serializer_fn, log_uuid
+        users, serializer_fn, log_uuid, log_name
     )
-    inserted_ids = _insert_missing(missing_invenio_users, log_uuid)
+    inserted_ids = _insert_missing(missing_invenio_users, log_uuid, log_name)
 
     total_time = time.time() - start_time
-    log_info(log_uuid, "users_sync", dict(status="completed", time=total_time))
+    log_info(log_name, dict(status="completed", time=total_time), log_uuid=log_uuid)
 
     return list(updated_ids.union(inserted_ids))

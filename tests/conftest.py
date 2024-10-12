@@ -16,14 +16,15 @@ class CustomProfile(Schema):
     """A custom user profile schema that matches the default mapper."""
 
     affiliations = fields.String()
-    cern_department = fields.String()
-    cern_group = fields.String()
-    cern_section = fields.String()
+    department = fields.String()
     family_name = fields.String()
     full_name = fields.String()
     given_name = fields.String()
+    group = fields.String()
     mailbox = fields.String()
+    orcid = fields.String()
     person_id = fields.String()
+    section = fields.String()
 
 
 @pytest.fixture(scope="module")

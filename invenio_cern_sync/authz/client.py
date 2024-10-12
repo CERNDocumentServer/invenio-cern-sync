@@ -17,6 +17,7 @@ import requests
 from flask import current_app
 
 from ..errors import RequestError
+from ..logging import log_info
 
 
 def request_with_retries(
@@ -161,11 +162,17 @@ class AuthZService:
         query_params += [("field", value) for value in fields]
         if since:
             dt = datetime.fromisoformat(since)
-            ymd = dt.strftime("%Y-%m-%d")
-            query_params.append(("filter", f"modificationTime:gt:{ymd}T00:00:00Z"))
+            str_dt = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            query_params.append(("filter", f"modificationTime:gt:{str_dt}"))
         query_string = urlencode(query_params)
 
         url_without_offset = f"{self.base_url}/api/v1.0/Identity?{query_string}"
+        log_info(
+            "authz-client",
+            dict(
+                action="get_identities", params=f"since: {since}, limit: {self.limit}"
+            ),
+        )
         return self._fetch_all(url_without_offset, headers)
 
     def get_groups(self, fields=GROUPS_FIELDS, since=None):
@@ -189,9 +196,13 @@ class AuthZService:
         query_params += [("field", value) for value in fields]
         if since:
             dt = datetime.fromisoformat(since)
-            ymd = dt.strftime("%Y-%m-%d")
-            query_params.append(("filter", f"modificationTime:gt:{ymd}T00:00:00Z"))
+            str_dt = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            query_params.append(("filter", f"modificationTime:gt:{str_dt}"))
         query_string = urlencode(query_params)
 
         url_without_offset = f"{self.base_url}/api/v1.0/Group?{query_string}"
+        log_info(
+            "authz-client",
+            dict(action="get_groups", params=f"since: {since}, limit: {self.limit}"),
+        )
         return self._fetch_all(url_without_offset, headers)

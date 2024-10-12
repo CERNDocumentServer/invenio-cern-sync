@@ -30,13 +30,14 @@ def test_serialize(app, cern_identities):
         assert serialized_identities[i]["username"] == f"jdoe{i}"
         assert serialized_identities[i]["user_profile"] == {
             "affiliations": "CERN",
-            "cern_department": "IT",
-            "cern_group": "CA",
-            "cern_section": "IR",
+            "department": "IT",
+            "group": "CA",
+            "section": "IR",
             "family_name": f"Doe {i}",
             "full_name": f"John Doe {i}",
             "given_name": "John",
-            "mailbox": "",
+            "mailbox": f"M31120{i}",
+            "orcid": f"0000-0002-2227-122{i}",
             "person_id": f"1234{i}",
         }
         assert serialized_identities[i]["preferences"] == {"locale": "en"}
