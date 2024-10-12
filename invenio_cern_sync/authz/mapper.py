@@ -12,7 +12,8 @@ def userprofile_mapper(cern_identity):
     """Map the CERN Identity fields to the Invenio user profile schema.
 
     The returned dict structure must match the user profile schema defined via
-    the config ACCOUNTS_USER_PROFILE_SCHEMA."""
+    the config ACCOUNTS_USER_PROFILE_SCHEMA.
+    """
     return dict(
         affiliations=cern_identity["instituteName"] or "",
         department=cern_identity["cernDepartment"] or "",

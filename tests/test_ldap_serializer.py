@@ -27,9 +27,9 @@ def test_serialize_ldap_users(app, ldap_users):
 
     profile = first_user["user_profile"]
     assert profile["affiliations"] == "CERN"
-    assert profile["cern_department"] == "IT"
-    assert profile["cern_group"] == "CA"
-    assert profile["cern_section"] == "IR"
+    assert profile["department"] == "IT"
+    assert profile["group"] == "CA"
+    assert profile["section"] == "IR"
     assert profile["family_name"] == "Doe 0"
     assert profile["full_name"] == "John Doe 0"
     assert profile["given_name"] == "John"
@@ -121,14 +121,14 @@ def test_serialize_ldap_users_missing_optional_fields(app):
 
     profile = first_user["user_profile"]
     assert profile["affiliations"] == ""
-    assert profile["cern_department"] == ""
+    assert profile["department"] == ""
     assert profile["family_name"] == ""
     assert profile["full_name"] == ""
     assert profile["given_name"] == ""
-    assert profile["cern_group"] == ""
+    assert profile["group"] == ""
     assert profile["mailbox"] == ""
     assert profile["person_id"] == "12340"
-    assert profile["cern_section"] == ""
+    assert profile["section"] == ""
 
     extra_data = first_user["remote_account_extra_data"]
     assert extra_data["identity_id"] == "12340"

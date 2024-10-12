@@ -14,7 +14,8 @@ def userprofile_mapper(ldap_user):
     """Map the LDAP fields to the Invenio user profile schema.
 
     The returned dict structure must match the user profile schema defined via
-    the config ACCOUNTS_USER_PROFILE_SCHEMA."""
+    the config ACCOUNTS_USER_PROFILE_SCHEMA.
+    """
     return dict(
         affiliations=first_or_default(ldap_user, "cernInstituteName"),
         department=first_or_default(ldap_user, "division"),
