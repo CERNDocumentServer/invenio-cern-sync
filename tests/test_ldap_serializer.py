@@ -8,6 +8,7 @@
 """Tests users serializers."""
 
 from copy import deepcopy
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -79,25 +80,26 @@ def test_serialize_alternative_mappers(app, monkeypatch, ldap_users):
         "employeeID",
         "mail",
         "cn",
-        "uidNumber",
     ],
 )
-def test_serialize_invalid_ldap_users(app, missing_field):
+@patch("invenio_cern_sync.ldap.serializer.current_app")
+def test_serialize_invalid_ldap_users(mock_app, app, missing_field):
     """Test serialization of invalid LDAP user."""
+    mock_logger = MagicMock()
+    mock_app.logger = mock_logger
+
     required_fields = {
         "employeeID": [b"12340"],
         "mail": [b"john.doe0@cern.ch"],
         "cn": [b"jdoe0"],
-        "uidNumber": [b"222220"],
     }
-    employeeID = "12340" if missing_field != "employeeID" else "unknown"
-    error_msg = (
-        f"Missing {missing_field} field or invalid value for employeeID {employeeID}"
-    )
-    with pytest.raises(InvalidLdapUser, match=error_msg):
-        without_missing_field = deepcopy(required_fields)
-        del without_missing_field[missing_field]
-        next(serialize_ldap_users([without_missing_field]))
+    employee_id = "12340" if missing_field != "employeeID" else "unknown"
+    excp = InvalidLdapUser(missing_field, employee_id)
+
+    without_missing_field = deepcopy(required_fields)
+    del without_missing_field[missing_field]
+    list(serialize_ldap_users([without_missing_field]))
+    mock_logger.warning.assert_any_call(f"{str(excp)} Skipping this account...")
 
 
 def test_serialize_ldap_users_missing_optional_fields(app):

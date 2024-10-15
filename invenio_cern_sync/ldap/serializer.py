@@ -10,7 +10,7 @@
 from flask import current_app
 
 from ..errors import InvalidLdapUser
-from ..utils import first_or_default, first_or_raise
+from ..utils import first_or_raise
 
 
 def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=None):
@@ -48,4 +48,8 @@ def serialize_ldap_user(ldap_user, userprofile_mapper=None, extra_data_mapper=No
 def serialize_ldap_users(ldap_users):
     """Serialize LDAP users to Invenio users."""
     for ldap_user in ldap_users:
-        yield serialize_ldap_user(ldap_user)
+        try:
+            yield serialize_ldap_user(ldap_user)
+        except InvalidLdapUser as e:
+            current_app.logger.warning(str(e) + " Skipping this account...")
+            continue

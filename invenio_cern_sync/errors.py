@@ -13,7 +13,7 @@ class InvalidLdapUser(Exception):
 
     def __init__(self, key, employee_id):
         """Constructor."""
-        msg = f"Missing {key} field or invalid value for employeeID {employee_id}."
+        msg = f"Missing `{key}` field or invalid value for employeeID `{employee_id}`."
         super().__init__(msg)
 
 
@@ -22,7 +22,7 @@ class InvalidCERNIdentity(Exception):
 
     def __init__(self, key, personId):
         """Constructor."""
-        msg = f"Missing {key} field or invalid value for personId {personId}."
+        msg = f"Missing `{key}` field or invalid value for personId `{personId}`."
         super().__init__(msg)
 
 
