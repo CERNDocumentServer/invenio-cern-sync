@@ -43,4 +43,8 @@ def serialize_cern_identity(cern_identity):
 def serialize_cern_identities(cern_identities):
     """Serialize CERN identities to Invenio users."""
     for cern_identity in cern_identities:
-        yield serialize_cern_identity(cern_identity)
+        try:
+            yield serialize_cern_identity(cern_identity)
+        except InvalidCERNIdentity as e:
+            current_app.logger.warning(str(e) + " Skipping this identity...")
+            continue
