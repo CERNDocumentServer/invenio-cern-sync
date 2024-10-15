@@ -8,17 +8,30 @@
 """Invenio-CERN-sync CERN test serializer."""
 
 
+from copy import deepcopy
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from invenio_cern_sync.authz.serializer import serialize_cern_identities
 from invenio_cern_sync.errors import InvalidCERNIdentity
 
 
-def test_missing_person_id(app, cern_identities):
-    cern_identity = cern_identities[0]
-    del cern_identity["personId"]
-    with pytest.raises(InvalidCERNIdentity):
-        next(serialize_cern_identities([cern_identity]))
+@pytest.mark.parametrize("missing_field", ["personId", "primaryAccountEmail", "upn"])
+@patch("invenio_cern_sync.authz.serializer.current_app")
+def test_missing_required_fields(mock_app, app, cern_identities, missing_field):
+    """Test missing required fields."""
+    mock_logger = MagicMock()
+    mock_app.logger = mock_logger
+
+    cern_identity = deepcopy(cern_identities[0])
+    del cern_identity[missing_field]
+
+    person_id = "12340" if missing_field != "personId" else "unknown"
+    excp = InvalidCERNIdentity(missing_field, person_id)
+
+    list(serialize_cern_identities([cern_identity]))
+    mock_logger.warning.assert_any_call(f"{str(excp)} Skipping this identity...")
 
 
 def test_serialize(app, cern_identities):
