@@ -11,8 +11,10 @@ import time
 import uuid
 from datetime import datetime
 
+from flask import current_app
 from invenio_accounts.models import User, UserIdentity
 from invenio_db import db
+from sqlalchemy.orm.exc import NoResultFound
 
 from ..authz.client import AuthZService, KeycloakService
 from ..authz.serializer import serialize_cern_identities
@@ -130,7 +132,13 @@ def _update_existing(users, serializer_fn, log_uuid, log_name):
                 # The `identity_id` changed.
                 # The `identity_id` of the UserIdentity associated to the User
                 # will have to be updated.
-                user_identity = UserIdentity.query.filter_by(id_user=user.id).one()
+                try:
+                    user_identity = UserIdentity.query.filter_by(id_user=user.id).one()
+                except NoResultFound:
+                    current_app.logger.error(
+                        f"UserIdentity not found for user.id={user.id}. Skipping this user..."
+                    )
+                    continue
 
                 _ra_extra_data = invenio_user["remote_account_extra_data"].get(
                     "changes", []
@@ -173,7 +181,13 @@ def _insert_missing(invenio_users, log_uuid, log_name):
 
     inserted = set()
     for invenio_user in invenio_users:
-        _id = create_user(invenio_user)
+        try:
+            _id = create_user(invenio_user)
+        except Exception as e:
+            current_app.logger.error(
+                f"Error creating user from CERN data: {e}. Skipping this user... User: {invenio_user}"
+            )
+            continue
         inserted.add(_id)
 
     db.session.commit()
