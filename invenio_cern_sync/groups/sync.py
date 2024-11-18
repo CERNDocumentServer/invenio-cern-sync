@@ -15,14 +15,22 @@ from invenio_oauthclient.handlers.utils import create_or_update_roles
 from ..authz.client import AuthZService, KeycloakService
 from ..logging import log_info
 
+def _truncate_string(input_string, max_length=255):
+    """Truncate string."""
+    if len(input_string) > max_length:
+        return input_string[:max_length-3] + "..."
+    return input_string
+
 
 def _serialize_groups(groups):
     """Serialize groups."""
     for group in groups:
+        description = group.get("description", "")
+        truncated_description = _truncate_string(description)
         yield {
             "id": group["groupIdentifier"],
             "name": group["displayName"],
-            "description": group["description"],
+            "description": truncated_description,
         }
 
 
