@@ -183,8 +183,8 @@ def _insert_missing(invenio_users, log_uuid, log_name):
     for invenio_user in invenio_users:
         try:
             if invenio_user["username"].startswith("_"):
-                # Seems that the auth team uses this as a temporal solution for 
-                # users that need to be imported in the system after they left CERN 
+                # Seems that the auth team uses this as a temporal solution for
+                # users that need to be imported in the system after they left CERN
                 current_app.logger.warning(
                     f"Skipping user with username starting with `_`: {invenio_user}"
                 )

@@ -15,10 +15,11 @@ from invenio_oauthclient.handlers.utils import create_or_update_roles
 from ..authz.client import AuthZService, KeycloakService
 from ..logging import log_info
 
+
 def _truncate_string(input_string, max_length=255):
     """Truncate string."""
     if len(input_string) > max_length:
-        return input_string[:max_length-3] + "..."
+        return input_string[: max_length - 3] + "..."
     return input_string
 
 
