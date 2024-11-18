@@ -7,6 +7,11 @@
 Changes
 =======
 
-Version 0.1.0 (released TBD)
+Version 0.1.1 (released 2024-11-18)
+
+- users: skip usernames starting with underscore
+- groups: limit description to 255 characters
+
+Version 0.1.0 (released 2024-11-13)
 
 - Initial public release.
