@@ -28,7 +28,7 @@ def _create_user(cern_user):
     )
     db.session.add(user)
     # necessary to get the auto-generated `id`
-    db.session.commit()
+    db.session.flush()
     return user
 
 
