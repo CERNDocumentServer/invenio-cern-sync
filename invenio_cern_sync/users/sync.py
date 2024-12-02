@@ -162,10 +162,9 @@ def _update_existing(users, serializer_fn, log_uuid, log_name):
                 ), f"User and UserIdentity are not correctly linked for user #{user.id} and user_identity #{user_identity.id}"
 
         if update_existing_user(user, user_identity, invenio_user):
+            db.session.commit()
             updated.add(user.id)
 
-    # persist changes before starting with the inserting of missing users
-    db.session.commit()
     log_info(
         log_name,
         dict(action=log_action, status="completed", updated_count=len(updated)),
@@ -195,9 +194,9 @@ def _insert_missing(invenio_users, log_uuid, log_name):
                 f"Error creating user from CERN data: {e}. Skipping this user... User: {invenio_user}"
             )
             continue
+        db.session.commit()
         inserted.add(_id)
 
-    db.session.commit()
     log_info(
         log_name,
         dict(action=log_action, status="completed", inserted_count=len(inserted)),

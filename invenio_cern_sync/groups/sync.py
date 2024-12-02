@@ -66,6 +66,7 @@ def sync(**kwargs):
         log_uuid=log_uuid,
     )
     roles_ids = create_or_update_roles(_serialize_groups(groups))
+    # db.session.commit() happens inside create_or_update_roles
     log_info(
         log_name,
         dict(
