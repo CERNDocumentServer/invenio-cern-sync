@@ -84,7 +84,9 @@ def cern_info_serializer(remote, resp, token_user_info, user_info):
             "email": email,
             "profile": {
                 "affiliations": user_info.get("home_institute", ""),
-                "full_name": user_info["name"],
+                "full_name": user_info.get(
+                    "name", token_user_info.get("name", "")
+                ),  # user_info might be missing
                 "username": username,
             },
             "prefs": {

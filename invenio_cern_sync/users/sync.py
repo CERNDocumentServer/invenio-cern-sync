@@ -79,12 +79,14 @@ def _log_identity_id_changed(
     return ra_extra_data
 
 
-def _update_existing(users, serializer_fn, log_uuid, log_name):
-    """Update existing users and return a list of missing users to insert."""
+def _update_existing(users, serializer_fn, log_uuid, log_name, persist_every=500):
+    """Update existing users in batches and return a list of missing users to insert."""
     missing = []
     updated = set()
     log_action = "updating-existing-users"
     log_info(log_name, dict(action=log_action, status="started"), log_uuid=log_uuid)
+
+    processed_count = 0
 
     for invenio_user in serializer_fn(users):
         user = user_identity = None
@@ -162,8 +164,15 @@ def _update_existing(users, serializer_fn, log_uuid, log_name):
                 ), f"User and UserIdentity are not correctly linked for user #{user.id} and user_identity #{user_identity.id}"
 
         if update_existing_user(user, user_identity, invenio_user):
-            db.session.commit()
             updated.add(user.id)
+
+        processed_count += 1
+        # Commit every `persist_every` iterations
+        if processed_count % persist_every == 0:
+            db.session.commit()
+
+    # Final commit for any remaining uncommitted changes
+    db.session.commit()
 
     log_info(
         log_name,
@@ -173,12 +182,14 @@ def _update_existing(users, serializer_fn, log_uuid, log_name):
     return missing, updated
 
 
-def _insert_missing(invenio_users, log_uuid, log_name):
-    """Insert users."""
+def _insert_missing(invenio_users, log_uuid, log_name, persist_every=500):
+    """Insert users in batches."""
     log_action = "inserting-missing-users"
     log_info(log_name, dict(action=log_action, status="started"), log_uuid=log_uuid)
 
     inserted = set()
+    processed_count = 0
+
     for invenio_user in invenio_users:
         try:
             if invenio_user["username"].startswith("_"):
@@ -188,14 +199,25 @@ def _insert_missing(invenio_users, log_uuid, log_name):
                     f"Skipping user with username starting with `_`: {invenio_user}"
                 )
                 continue
-            _id = create_user(invenio_user)
+
+            with db.session.begin_nested():
+                _id = create_user(invenio_user)
+                inserted.add(_id)
+
+            processed_count += 1
+
+            # Commit every `persist_every` iterations
+            if processed_count % persist_every == 0:
+                db.session.commit()
+
         except Exception as e:
             current_app.logger.error(
                 f"Error creating user from CERN data: {e}. Skipping this user... User: {invenio_user}"
             )
             continue
-        db.session.commit()
-        inserted.add(_id)
+
+    # Final commit for any remaining uncommitted changes
+    db.session.commit()
 
     log_info(
         log_name,
