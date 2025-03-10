@@ -7,6 +7,10 @@
 Changes
 =======
 
+Version 0.2.0 (released 2025-03-10)
+
+- installation: upgrade invenio dependencies
+
 Version 0.1.1 (released 2024-11-18)
 
 - users: skip usernames starting with underscore
