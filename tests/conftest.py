@@ -41,6 +41,7 @@ def app_config(
     """Application config override."""
     app_config["CERN_APP_CREDENTIALS"] = {"consumer_key": client_id}
     app_config["ACCOUNTS_USER_PROFILE_SCHEMA"] = CustomProfile()
+    app_config["THEME_FRONTPAGE"] = False
     return app_config
 
 
