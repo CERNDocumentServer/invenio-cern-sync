@@ -142,28 +142,35 @@ def test_fetch_all_pagination(
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "data": [cern_identities[i]],
-            "pagination": {"total": total},
+            "pagination": {"token": "next-token" if i < total - 1 else None},
         }
         mocked_responses.append(mock_response)
 
     mock_request_with_retries.side_effect = mocked_responses
 
     authz_service = AuthZService(mock_keycloak_service, limit=1)
-    url = "https://authz.test/api/v1.0/Identity?limit=1&filter=type:Person"
+    url = "https://authz.test/api/v1.0/Identity?filter=type:Person"
     headers = {"Authorization": "Bearer test-token"}
 
     results = list(authz_service._fetch_all(url, headers))
 
     assert len(results) == total
     assert mock_request_with_retries.call_count == 3
-    for i in range(len(results)):
+    expected_urls = [
+        "https://authz.test/api/v1.0/Identity?filter=type:Person&limit=1",
+        "https://authz.test/api/v1.0/Identity?filter=type:Person&limit=1&token=next-token",
+        "https://authz.test/api/v1.0/Identity?filter=type:Person&limit=1&token=next-token",
+    ]
+
+    for expected_url in expected_urls:
         mock_request_with_retries.assert_any_call(
-            url=f"https://authz.test/api/v1.0/Identity?limit=1&filter=type:Person&offset={i}",
+            url=expected_url,
             method="GET",
             headers=headers,
         )
-        # cannot easily test response values with multithreading
-        # assert results[i][0]["upn"] == f"jdoe{i}"
+
+    for i in range(total):
+        assert results[i]["upn"] == f"jdoe{i}"
 
 
 def test_get_identities_empty(

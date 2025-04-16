@@ -7,8 +7,6 @@
 
 """Invenio-CERN-sync CERN Authorization Service client."""
 
-import concurrent.futures
-import os
 import time
 from datetime import datetime
 from urllib.parse import urlencode
@@ -105,33 +103,21 @@ class AuthZService:
         self.max_threads = max_threads
 
     def _fetch_all(self, url, headers):
-        """Fetch results page by page in parallel using multiple threads."""
-        offset = 0
-        futures = []
+        """Fetch results page by page using token-based pagination."""
+        next_token = None
 
-        # perform the first request, also to get the total number of results
-        _url = f"{url}&offset={offset}"
-        resp = request_with_retries(url=_url, method="GET", headers=headers)
-        total = resp.json()["pagination"]["total"]
-        yield from resp.json()["data"]
-        offset += self.limit
+        while True:
+            _url = f"{url}&limit={self.limit}"
+            if next_token:
+                _url += f"&token={next_token}"
 
-        max_threads = os.cpu_count()
-        if not max_threads or max_threads > self.max_threads:
-            max_threads = self.max_threads
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-            while offset < total:
-                _url = f"{url}&offset={offset}"
-                futures.append(
-                    executor.submit(
-                        request_with_retries, url=_url, method="GET", headers=headers
-                    )
-                )
-                offset += self.limit
+            resp = request_with_retries(url=_url, method="GET", headers=headers)
+            data = resp.json()
+            yield from data["data"]
 
-            for future in concurrent.futures.as_completed(futures):
-                resp = future.result()
-                yield from resp.json()["data"]
+            next_token = data.get("pagination", {}).get("token")
+            if not next_token:
+                break
 
     def get_identities(self, fields=IDENTITY_FIELDS, since=None):
         """Get all identities.
