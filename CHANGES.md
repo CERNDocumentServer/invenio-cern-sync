@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version 0.3.0 (released 2025-05-05)
+
+- client: replace offset with token #8
+
+
 Version 0.2.0 (released 2025-03-10)
 
 - installation: upgrade invenio dependencies
