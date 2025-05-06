@@ -11,12 +11,12 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
       - "feature/*"
       - "maint-**"
   pull_request:
     branches:
-      - master
+      - main
       - "maint-**"
       - "feature/**"
   schedule:
