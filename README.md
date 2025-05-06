@@ -115,7 +115,7 @@ pip install invenio-cern-sync[ldap]
 Define the LDAP url:
 
 ```python
-CERN_SYNC_LDAP_URL = <url>
+CERN_SYNC_LDAP_URL = "<url>"
 ```
 
 Then, create a new celery task and sync users:
