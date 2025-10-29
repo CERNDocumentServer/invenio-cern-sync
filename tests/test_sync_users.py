@@ -259,7 +259,44 @@ def test_sync_person_id_change(
         "users-sync",
         dict(action="updating-existing-users", msg=expected_log_msg),
         log_uuid=mock.ANY,
-    ),
+    )
+
+
+@patch("invenio_cern_sync.users.sync.KeycloakService")
+@patch("invenio_cern_sync.users.sync.AuthZService")
+@patch("invenio_cern_sync.users.sync.log_warning")
+def test_sync_identity_missing(
+    mock_log_warning,
+    MockAuthZService,
+    MockKeycloakService,
+    app,
+    cern_identities,
+    db,
+):
+    """Test sync identity missing."""
+    # prepare the db with the initial data
+    client_id = app.config["CERN_APP_CREDENTIALS"]["consumer_key"]
+
+    MockAuthZService.return_value.get_identities.return_value = cern_identities
+    sync(method="AuthZ")
+
+    # delete the first identity from the DB
+    first = cern_identities[0]
+    previous_person_id = first["personId"]
+    UserIdentity.query.filter_by(id=first["personId"]).delete()
+    db.session.commit()
+    MockAuthZService.return_value.get_identities.return_value = cern_identities
+    sync(method="AuthZ")
+
+    # check that the user identity was updated, but the user was not duplicated
+    assert UserIdentity.query.filter_by(id=first["personId"]).one()
+    user = User.query.filter_by(email=first["primaryAccountEmail"]).one()
+    expected_log_msg = f"Identity Id changed for User `{user.username}` `{user.email}`. Previous UserIdentity.id in the local DB: `{previous_person_id}` - New Identity Id from CERN DB: `{first['personId']}`."
+    mock_log_warning.assert_any_call(
+        "users-sync",
+        dict(action="updating-existing-users", msg=expected_log_msg),
+        log_uuid=mock.ANY,
+    )
 
 
 @patch("invenio_cern_sync.users.sync.KeycloakService")
@@ -308,4 +345,4 @@ def test_sync_username_email_change(
         "users-sync",
         dict(action="updating-existing-users", msg=expected_log_msg),
         log_uuid=mock.ANY,
-    ),
+    )
