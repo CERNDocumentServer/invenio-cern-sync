@@ -21,6 +21,7 @@ from ..authz.serializer import serialize_cern_identities
 from ..ldap.client import LdapClient
 from ..ldap.serializer import serialize_ldap_users
 from ..logging import log_info, log_warning
+from ..sso import cern_remote_app_name
 from .api import create_user, update_existing_user
 
 
@@ -131,16 +132,17 @@ def _update_existing(users, serializer_fn, log_uuid, log_name, persist_every=500
                 )
                 invenio_user["remote_account_extra_data"]["changes"] = ra_extra_data
             elif user and (not user_identity or user_identity.id_user != user.id):
-                # The `identity_id` changed.
-                # The `identity_id` of the UserIdentity associated to the User
-                # will have to be updated.
+                # The `identity_id` changed or it does not exist yet.
                 try:
                     user_identity = UserIdentity.query.filter_by(id_user=user.id).one()
                 except NoResultFound:
-                    current_app.logger.error(
-                        f"UserIdentity not found for user.id={user.id}. Skipping this user..."
+                    UserIdentity.create(
+                        user,
+                        cern_remote_app_name,
+                        invenio_user["user_identity_id"],
                     )
-                    continue
+                    db.session.flush()
+                    user_identity = UserIdentity.query.filter_by(id_user=user.id).one()
 
                 _ra_extra_data = invenio_user["remote_account_extra_data"].get(
                     "changes", []
@@ -211,7 +213,7 @@ def _insert_missing(invenio_users, log_uuid, log_name, persist_every=500):
                 db.session.commit()
 
         except Exception as e:
-            current_app.logger.error(
+            current_app.logger.warning(
                 f"Error creating user from CERN data: {e}. Skipping this user... User: {invenio_user}"
             )
             continue
