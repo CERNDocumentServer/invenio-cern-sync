@@ -1,7 +1,7 @@
 [project]
 name = "invenio-cern-sync"
 description = "Integrates CERN databases and login with Invenio"
-version = "0.3.0"
+version = "0.4.0"
 authors = [
     { name = "CERN" }
 ]
