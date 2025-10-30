@@ -1,0 +1,51 @@
+[project]
+name = "invenio-cern-sync"
+description = "Integrates CERN databases and login with Invenio"
+version = "0.3.0"
+authors = [
+    { name = "CERN" }
+]
+license = "MIT"
+requires-python = ">=3.9"
+dependencies = [
+    "invenio-accounts>=6.0.0,<7.0.0",
+    "invenio-celery>=2.0.0,<3.0.0",
+    "invenio-oauthclient>=5.0.0,<6.0.0",
+    "invenio-userprofiles>=4.0.0,<5.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "invenio-app>=2.0.0",
+    "invenio-db[postgresql,mysql]>=2.0.0,<3.0.0",
+    "pytest-invenio>=3.0.0,<4.0.0",
+    "pytest-black-ng>=0.4.0",
+]
+
+[project.optional-dependencies]
+ldap = [
+    "python-ldap>=3.4.0",
+]
+opensearch2 = [
+    "invenio-search[opensearch2]>=3.0.0,<4.0.0",
+]
+
+[project.entry-points."invenio_base.apps"]
+invenio_cern_sync = "invenio_cern_sync.ext:InvenioCERNSync"
+
+[project.entry-points."invenio_celery.tasks"]
+invenio_cern_sync = "invenio_cern_sync.tasks"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.isort]
+profile = "black"
+
+[tool.pydocstyle]
+add_ignore = ["D401", "D403"]
+
+[tool.pytest.ini_options]
+addopts = ["--isort", "--pydocstyle", "--doctest-glob=\"*.rst\"", "--doctest-modules", "--cov=invenio_cern_sync", "--cov-report=term-missing", "--exclude-warning-annotations"]
+testpaths = "tests invenio_cern_sync"
