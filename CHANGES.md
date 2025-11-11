@@ -7,6 +7,10 @@
 Changes
 =======
 
+Version 0.5.0 (released 2025-XX-XX)
+
+- setup: bump major version of `invenio-oauthclient`
+
 Version 0.4.0 (released 2025-10-30)
 
 - users sync: create identity when missing
