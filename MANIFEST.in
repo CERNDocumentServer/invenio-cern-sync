@@ -18,5 +18,6 @@ include .editorconfig
 recursive-include .github/workflows *.yml
 include *.md
 include *.sh
+include .pyproject.toml
 recursive-include invenio_cern_sync *.py
 recursive-include tests *.py
