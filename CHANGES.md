@@ -7,7 +7,7 @@
 Changes
 =======
 
-Version 0.5.0 (released 2025-XX-XX)
+Version 0.5.0 (released 2025-11-12)
 
 - setup: bump major version of `invenio-oauthclient`
 
