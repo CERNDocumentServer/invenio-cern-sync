@@ -7,6 +7,11 @@
 Changes
 =======
 
+Version 0.6.0 (released 2026-02-13)
+
+- setup: bump dependency major versions
+- feat(sync): include UTC timezone in extra_data for greater clarity
+
 Version 0.5.0 (released 2025-11-12)
 
 - setup: bump major version of `invenio-oauthclient`
