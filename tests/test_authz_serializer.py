@@ -4,9 +4,7 @@
 #
 # Invenio-CERN-sync is free software; you can redistribute it and/or modify it under
 # the terms of the MIT License; see LICENSE file for more details.
-
 """Invenio-CERN-sync CERN test serializer."""
-
 
 from copy import deepcopy
 from unittest.mock import MagicMock, patch

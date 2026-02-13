@@ -9,7 +9,7 @@
 
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import current_app
 from invenio_accounts.models import User, UserIdentity
@@ -43,7 +43,7 @@ def _log_user_data_changed(
     # record this change in the RemoteAccount.extra_data
     ra_extra_data.append(
         dict(
-            datetime=datetime.now().isoformat(),
+            datetime=datetime.now(tz=timezone.utc).isoformat(),
             action="userdata_changed",
             previous_username=previous_username,
             previous_email=previous_email,
@@ -71,7 +71,7 @@ def _log_identity_id_changed(
     # record this change in the RemoteAccount.extra_data
     ra_extra_data.append(
         dict(
-            datetime=datetime.now().isoformat(),
+            datetime=datetime.now(tz=timezone.utc).isoformat(),
             action="identityId_changed",
             previous_identity_id=previous_identity_id,
             new_identity_id=new_identity_id,
