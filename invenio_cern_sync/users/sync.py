@@ -21,6 +21,7 @@ from ..authz.serializer import serialize_cern_identities
 from ..ldap.client import LdapClient
 from ..ldap.serializer import serialize_ldap_users
 from ..logging import log_info, log_warning
+from ..sso import cern_remote_app_name
 from .api import create_user, update_existing_user
 
 
@@ -104,6 +105,9 @@ def _update_existing(users, serializer_fn, log_uuid, log_name, persist_every=500
             # The user does not exist in the DB.
             # The creation of new users is done after all updates completed,
             # to avoid conflicts in case other `identity_id` have changed.
+            current_app.logger.warning(
+                f"User not found in the DB. Adding to missing list: {invenio_user['email']}"
+            )
             missing.append(invenio_user)
             continue
         else:
@@ -137,8 +141,13 @@ def _update_existing(users, serializer_fn, log_uuid, log_name, persist_every=500
                 try:
                     user_identity = UserIdentity.query.filter_by(id_user=user.id).one()
                 except NoResultFound:
-                    current_app.logger.error(
-                        f"UserIdentity not found for user.id={user.id}. Skipping this user..."
+                    current_app.logger.warning(
+                        f"UserIdentity not found for user with email {user.email}. Creating new UserIdentity: {invenio_user['user_identity_id']}"
+                    )
+                    user_identity = UserIdentity.create(
+                        user=user,
+                        method=cern_remote_app_name,
+                        external_id=invenio_user["user_identity_id"],
                     )
                     continue
 
