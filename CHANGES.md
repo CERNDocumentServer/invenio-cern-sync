@@ -1,11 +1,15 @@
 ..
-    Copyright (C) 2025-2026 CERN.
+Copyright (C) 2025-2026 CERN.
 
     Invenio-CERN-sync is free software; you can redistribute it and/or modify it
     under the terms of the MIT License; see LICENSE file for more details.
 
 Changes
 =======
+
+Version 0.8.0 (released 2026-07-09)
+
+- setup: bump dependency major versions
 
 Version 0.7.0 (released 2026-06-08)
 
