@@ -7,6 +7,10 @@ Copyright (C) 2025-2026 CERN.
 Changes
 =======
 
+Version 0.9.0 (released 2026-11-26)
+
+- setup: bump dependency major versions
+
 Version 0.8.0 (released 2026-07-09)
 
 - setup: bump dependency major versions
